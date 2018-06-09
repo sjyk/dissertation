@@ -1,0 +1,178 @@
+\section{Learning With Transition States}
+Next, we build on TSC to construct a planner that leverages the structure learned by TSC.
+Real-world tasks often naturally decompose into a sequence of simpler, locally-solvable sub-tasks.
+For example, an assembly task might decompose into completing the part's constituent sub-assemblies or a surgical task might decompose into a sequence of movement primitives.
+Such structure imposes a strong prior on the class of successful policies and can focus exploration in reinforcement learning.
+It reduces the effective time horizon of learning to the start of the next subtask rather than until task completion.
+We apply a clustering algorithm to identify a latent set of state-space subgoals that sequentially compose to form the global task.
+This leads to a novel policy search algorithm, called Sequential Windowed Inverse Reinforcement Learning (SWIRL),  where the demonstrations can bootstrap a self-supervised Q-learning algorithm.
+
+ Transitions are defined as significant changes in the state trajectory. These transitions can be spatially and temporally clustered to identify if there are common conditions that trigger a change in motion across demonstrations.
+SWIRL extends this basic model with an Inverse Reinforcement Learning step that extracts subgoals and computes local cost functions from the learned clusters. 
+Learning a policy over the segmented task is nontrivial because solving $k$ independent problems neglects any shared structure in the value function during the policy learning phase (e.g., a common failure state).
+Jointly learning over all segments introduces a dependence on history, namely, any policy must complete step $i$ before step $i+1$.
+Learning a memory-dependent policy could lead to an exponential overhead of additional states. 
+We show that the problem can be posed as a proper MDP in a lifted state-space that includes an indicator variable of the highest-index $\{1,...,k\}$ transition region that has been reached so far if there are Markovian regularity assumptions on the clustering algorithm.
+
+\subsection{Sequential Windowed Inverse Reinforcement Learning}
+Directly optimizing the reward function $\mathcal{R}$ in the MDP from the previous section might be very challenging.
+We propose to approximate $\mathcal{R}$ with a sequence of smoother reward functions.
+
+\begin{definition}[Proxy Task]
+A proxy task is a set of $k$ MDPs with the same state set, action set, and dynamics. 
+Associated with each MDP $i$ is a reward function  $R_i: S \times A \mapsto \mathbb{R}$. Additionally, associated with each $R_i$ is a transition region $\rho_i \subseteq S$, which is a subset of the state-space. A robot accumulates a reward $R_i$ until it reaches the transition $\rho_i$, then the robot switches to the next reward and transition pair.
+This process continues until $\rho_k$ is reached.
+\end{definition}
+
+A robot is deemed \emph{successful} when all of the $\rho_i$ are reached in sequence within a global time-horizon $T$. \hirl uses a set of initial supervisor demonstrations to construct a proxy task that approximates the original MDP. To make this problem computationally tractable, we make some modeling assumptions.
+
+\vspace{0.5em}\noindent\textbf{Modeling Assumption 1. Successful Demonstrations: } We need conditions on the demonstrations to be able to infer the sequential structure. We assume that all demonstrations are successful, that is, they visit each $\rho_i$ in the same sequence.
+
+\vspace{0.5em}\noindent\textbf{Modeling Assumption 2. Quadratic Rewards: } We assume that each reward function $R_i$ can be expressed as a quadratic of the form $-(s-s_0)^T \Psi (s - s_0)$ for some positive semi-definite $\Psi$ and a center point $s_0$ with $s_0^T \Psi s_0 = 0$. 
+
+\vspace{0.5em}\noindent\textbf{Modeling Assumption 3. Ellipsoidal Approximation: } Finally, we assume that the transition regions in $\rho_i$ can be approximated by a set of disjoint ellipsoids.
+
+\subsubsection{Algorithm Overview}
+\hirl can be described in terms of three sub-algorithms:
+
+\vspace{4pt}
+
+\noindent\textbf{Inputs:} Demonstrations $D$
+\begin{enumerate}
+    \item \textbf{Sequence Learning (Section 5): } Given $D$, \hirl applies a hierarchical clustering algorithm to partition the task into $k$ sub-tasks whose start and end are defined by arrival at a sequence of transitions $G = [\rho_1,...,\rho_k]$.
+    \item \textbf{Reward Learning (Section 6): } Given $G$ and $D$, \hirl associates a local reward function with each segment resulting in a sequence of rewards $\mathbf{R}_{seq} = [R_1,...,R_k]$. 
+    \item \textbf{Policy Learning (Section 7): } Given $\mathbf{R}_{seq}$ and $G$, \hirl applies reinforcement learning to optimize a policy for the task $\pi$. 
+\end{enumerate}
+
+\noindent\textbf{Outputs:} Policy $\pi$
+
+\vspace{4pt}
+
+In principle, one could couple steps 1 and 2 similar to the results in~\cite{ranchod2015nonparametric}. We separate these steps since that allows us to use a different set of features for segmentation than used for reward learning. Perceptual features can provide a valuable signal for segmentation but quadratic reward functions may not be meaningful in all perceptual feature spaces. 
+
+\subsubsection{Sequence Learning}
+First, \hirl applies a clustering algorithm to the initial demonstrations to learn the transition regions. The clustering model is based on our prior work on Transition State Clustering (TSC)~\cite{krishnan2015tsc,murali2016}. Transitions are defined as significant changes in the state trajectory. These transitions can be spatially and temporally clustered to identify if there are common conditions that trigger a change in motion across demonstrations.
+
+\subsubsection{Reward Learning}\label{sec:reward}
+After the sequence learning phase, each demonstration is partitioned into $k$ segments.
+The reward learning phase uses the learned $[\rho_1,...,\rho_k]$ to construct the local rewards $[R_1,...,R_k]$ for the task.
+Each $R_i$ is a quadratic cost parametrized by a positive semi-definite matrix $\Psi$.
+
+
+The role of the reward function is to guide the robot to the next transition region $\rho_i$.
+A first approach is for each segment $i$, we can define a reward function as follows:
+\[
+R_i(s) = -\|s - \mu_{i}\|_2^2, 
+\]
+which is just the Euclidean distance to the centroid.
+
+A problem with using Euclidean distance directly is that it uniformly penalizes disagreement with $\mu$ in all dimensions.
+During different stages of a task, some directions will likely naturally vary more than others.
+To account for this, we can derive :
+\[
+\Psi[j,l] = \Sigma^{-1},
+\]
+which is the inverse of the covariance matrix of all of the state vectors in the segment:
+\begin{equation}
+\Psi = (\sum_{t=start}^{end} s s^T)^{-1},
+\label{localq}
+\end{equation}
+which is a $p \times p$ matrix defined as the covariance of all of the states in the segment $i-1$ to $i$.
+Intuitively, if a feature has low variance during this segment, deviation in that feature from the desired target it gets penalized. 
+This is exactly the Mahalonabis distance to the next transition. 
+
+For example, suppose one of the features $j$ measures the distance to a reference trajectory $u_t$. 
+Further, suppose in step one of the task the demonstrator's actions are perfectly correlated with the trajectory ($\Psi_{i}[j,j]$ is low where variance is in the distance) and in step two the actions are uncorrelated with the reference trajectory ($\Psi_{i}[j,j]$ is high).
+Thus, $\Psi$ will respectively penalize deviation from $\mu_{i}[j]$ more in step one than in step two.
+
+
+\begin{algorithmic}[t]
+\small
+\DontPrintSemicolon
+\caption{Reward Inference \label{alg:tsh2}}
+\KwData{Demonstration $\mathcal{D}$ and sub-goals $[\rho_1,...,\rho_k]$}
+
+Based on the transition states, segment each demonstration $d_i$ into $k$ sub-sequences where the $j^{th}$ is denoted by $d_i[j]$.
+
+Apply MaxEnt-IRL or  Equation \ref{localq} to each set of sub-sequences $1...k$.
+
+\KwResult{$\mathbf{R}_{seq}$}
+\end{algorithmic}
+
+
+
+\subsubsection{Policy Learning}
+\seclabel{policy-learning}
+ \hirl uses the learned transitions $[\rho_1,...,\rho_k]$ and $\mathbf{R}_{seq}$ to construct a proxy task to solve via Reinforcement Learning. In this section, we describe learning a policy $\pi$ given rewards $\mathbf{R}_{seq}$ and an ordered sequence of transitions $G$.
+However, this problem is not trivial since solving $k$ independent problems neglects potential shared value structure between the local problems (e.g., a common failure state).
+Furthermore, simply taking the aggregate of the rewards can lead to inconsistencies since there is nothing enforcing the order of operations.
+We show that a single policy can be learned jointly over all segments over a modified problem where the state-space with additional variables that keep track of the previously achieved segments.
+We present a Q-Learning algorithm~\cite{mnih2015human,sutton1998reinforcement} that captures the coupling noted above between task segments.
+In principle, similar techniques can be used for any other policy search method.
+
+\subsubsection{Jointly Learning Over All Segments}
+In our sequential task definition, we cannot transition to reward $R_{i+1}$ unless all previous transition regions $\rho_{1},...\rho_{i}$ are reached in sequence.
+We can leverage the definition of the Markov Segmentation function formalized earlier to jointly learn across all segments, while leveraging the segmented structure.
+We know that the reward transitions ($R_{i}$ to $R_{i+1}$) only depend on an arrival at the transition state $\rho_{i}$ and not any other aspect of the history.
+Therefore, we can store an index $v$, that indicates whether a transition state $i \in 0,...,k$ has been reached.
+This index can be efficiently incremented when the current state $s \in \rho_{i+1}$.
+The result is an augmented state-space $\binom{s}{v}$ to account for previous progress.
+In this lifted space, the problem is a fully observed MDP.
+Then, the additional complexity of representing the reward with history over $S \times  [k]$ is only $\mathcal{O}(k)$ instead of exponential in the time horizon.
+
+\subsubsection{Segmented Q-Learning}
+At a high-level, the objective of standard Q-Learning is to learn the function $Q(s,a)$ of the optimal policy, which is the expected reward the agent will receive taking action $a$ in state $s$, assuming future behavior is optimal. 
+Q-Learning works by first initializing a random $Q$ function. Then, it samples rollouts from an exploration policy collecting $(s,a,r, s')$ tuples. From these tuples, one can calculate the following value:
+\[
+y_i = R(s,a) + \arg \max_{a} Q(s',a)
+\]
+Each of the $y_i$ can be used to define a loss function since if $Q$ were the true Q function, then the following recurrence would hold:
+\[
+Q(s,a) = R(s,a) + \arg \max_{a} Q(s',a)
+\]
+So, Q-Learning defines a loss:
+\[
+L(Q) = \sum_{i} \|y_i - Q(s,a)\|_2^2
+\]
+This loss can be optimized with gradient descent. When the state and action space is discrete, the representation of the Q function is a table, and we get the familiar Q-Learning algorithm~\cite{sutton1998reinforcement}--where each gradient step updates the table with the appropriate value. When Q function needs to be approximated, then we get the Deep Q Network algorithm~\cite{mnih2015human}.
+
+\hirl applies a variant of Q-Learning to optimize the policy over the sequential rewards. This is summarized in Algorithm~\ref{alg:tsh3}. The basic change to the algorithm is to augment the state-space with indicator vector that indicates the transition regions that have been reached. So each of the rollouts, now records a tuple $(s,\textbf{v},a,r, s', \textbf{v'})$ that additionally stores this information. The Q function is now defined over states, actions, and segment index--which also selects the appropriate local reward function:
+\[
+Q(s,a,v) = R_v(s,a) + \arg \max_{a} Q(s',a, v')
+\]
+We also need to define an exploration policy, i.e., a stochastic policy with which we will collect rollouts. To initialize the Q-Learning, we apply Behavioral Cloning locally for each of the segments to get a policy $\pi_i$. We apply an $\epsilon$-greedy version of these policies to collect rollouts.
+
+\begin{algorithmic}[t]
+\small
+\DontPrintSemicolon
+\caption{Q-Learning With Segments \label{alg:tsh3}}
+\KwData{Transition States $G$, Reward Sequence $\mathbf{R}_{seq}$, exploration policy $\pi$}
+
+Initialize $Q(\binom{s}{v},a)$ randomly
+
+\ForEach{$iter \in 0,...,I$}{
+    Draw $s_0$ from initial conditions
+    
+    Initialize $v$ to be $[0,...,0]$
+    
+    Initialize $j$ to be $1$
+    
+    \ForEach{$t \in 0,...,T$}{
+        Choose action $a$ based on $\pi$.
+        
+        Observe Reward $R_{j}$
+        
+        Update state to $s'$ and $Q$ via Q-Learning update
+        
+        If $s'$ is $\in  \rho_{j}$ update $v[j] = 1$ and $j = j +1$
+    }
+}
+
+\KwResult{Policy $\pi$}
+\end{algorithmic}
+
+
+
+
+
+

@@ -1,0 +1,180 @@
+\documentclass[12pt]{book}
+
+% Users of the {thebibliography} environment or BibTeX should use the
+% scicite.sty package, downloadable from *Science* at
+% www.sciencemag.org/about/authors/prep/TeX_help/ .
+% This package should properly format in-text
+% reference calls and reference-list numbers.
+
+%\usepackage{scicite}
+
+% Use times if you have the font installed; otherwise, comment out the
+% following line.
+
+%\usepackage{times}
+\usepackage{apacite}
+\usepackage{amsmath}
+\usepackage{amsfonts} 
+%\usepackage{algorithmic}
+\usepackage{algpseudocode}
+
+% The preamble here sets up a lot of new/revised commands and
+% environments.  It's annoying, but please do *not* try to strip these
+% out into a separate .sty file (which could lead to the loss of some
+% information when we convert the file to other formats).  Instead, keep
+% them in the preamble of your main LaTeX source file.
+
+
+% The following parameters seem to provide a reasonable page setup.
+
+\usepackage[margin=1.3in]{geometry}
+
+\input{shared_defs.tex}
+
+%The next command sets up an environment for the abstract to your paper.
+
+\newenvironment{sciabstract}{%
+\begin{quote} \bf}
+{\end{quote}}
+\newcommand{\hirl}{SWIRL\xspace}
+\newcommand{\HIRL}{SWIRL\xspace}
+
+% If your reference list includes text notes as well as references,
+% include the following line; otherwise, comment it out.
+
+\renewcommand\refname{References and Notes}
+
+% The following lines set up an environment for the last note in the
+% reference list, which commonly includes acknowledgments of funding,
+% help, etc.  It's intended for users of BibTeX or the {thebibliography}
+% environment.  Users who are hand-coding their references at the end
+% using a list environment such as {enumerate} can simply add another
+% item at the end, and it will be numbered automatically.
+
+\newcounter{lastnote}
+\newenvironment{scilastnote}{%
+\setcounter{lastnote}{\value{enumiv}}%
+\addtocounter{lastnote}{+1}%
+\begin{list}%
+{\arabic{lastnote}.}
+{\setlength{\leftmargin}{.22in}}
+{\setlength{\labelsep}{.5em}}}
+{\end{list}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{example}{Example}
+\newtheorem{definition}{Definition}
+\newtheorem{problem}{Problem}
+\newtheorem{property}{Property}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+
+% Include your paper's title here
+
+\title{Scaling Up Deep Reinforcement Learning to Long Time Horizons and Large Action Spaces} 
+
+
+% Place the author information here.  Please hand-code the contact
+% information and notecalls; do *not* use \footnote commands.  Let the
+% author contact information appear immediately below the author names
+% as shown.  We would also prefer that you don't change the type-size
+% settings shown here.
+
+\author
+{Sanjay Krishnan\\
+\\
+\normalsize{$^{1}$Department of Electrical Engineering and Computer Science, University of California Berkeley,}\\
+\normalsize{$^\ast$To whom correspondence should be addressed; E-mail:  sanjay@eecs.berkeley.edu.}
+}
+
+% Include the date command, but leave its argument blank.
+
+\date{}
+
+
+
+%%%%%%%%%%%%%%%%% END OF PREAMBLE %%%%%%%%%%%%%%%%
+
+
+
+\begin{document} 
+
+% Double-space the manuscript.
+
+\baselineskip26pt
+
+% Make the title.
+
+\maketitle 
+
+
+
+% Place your abstract within the special {sciabstract} environment.
+
+
+\begin{sciabstract}
+Emerging techniques in Deep Reinforcement
+Learning (Deep RL) have great potential for sequential decision making problems from robotics to databases. This dissertation studies Deep RL in action spaces that are very high-dimensional and/or combinatorial; requiring new hierarchical frameworks for representing policies and exploration strategies for efficiently pruning the search space. The dissertation describes  Deep RL systems for for learning robust surgical robot control policies, synthesizing data-cleaning programs, and generating efficient execution plans for relational queries. To achieve these system, I make the following algorithmic contributions: a new learning framework for learning hierarchical task structure from observed data and a exploration of applying the Deep Q Network algorithm in combinatorial graph search problems.
+\end{sciabstract}
+
+
+\clearpage
+
+\tableofcontents
+
+\clearpage
+
+
+% In setting up this template for *Science* papers, we've used both
+% the \section* command and the \paragraph* command for topical
+% divisions.  Which you use will of course depend on the type of paper
+% you're writing.  Review Articles tend to have displayed headings, for
+% which \section* is more appropriate; Research Articles, when they have
+% formal topical divisions at all, tend to signal them with bold text
+% that runs into the paragraph, for which \paragraph* is the right
+% choice.  Either way, use the asterisk (*) modifier, as shown, to
+% suppress numbering.
+
+
+
+\input{introduction.tex}
+\input{background.tex}
+\input{supervision.tex}
+\input{hierarchy.tex}
+\input{ddco.tex}
+\input{tsc.tex}
+\input{swirl.tex}
+\input{combinatorial.tex}
+\input{ac.tex}
+\input{sql.tex}
+\input{conclusion.tex}
+
+
+\bibliography{scibib,rw,imit,ddco,sql,ac}
+
+\bibliographystyle{apacite}
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

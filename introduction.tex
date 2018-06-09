@@ -1,0 +1,22 @@
+\setcounter{secnumdepth}{0}
+\chapter{Preliminaries}
+\section{Introduction}
+Bellman's ``Principle of Optimality'' and the characterization of dynamic programming is one of the most important results in computing~\cite{bellman2013dynamic}. Its importance stems from the ubiquity of Markovian decision problems from path planning to scheduling to cost-based program optimization~\cite{howard1966dynamic}. In the most abstract form, there is an agent who makes a sequence of decisions to effect change on a system that processes these decisions and updates its internal state. For example, one might have to plan a sequence of motor commands to a robot to control it to a target position. Or, one might have to schedule a sequence of cluster computing tasks while avoiding double scheduling on a node. 
+The solution to a Markov Decision Process (MDP) is a decision making policy---what is the optimal decision to make given the current state of the system. 
+
+Unfortunately, finding optimal solutions to general MDP problems is more often than not computationally impractical. Over the three years, approximations based on the combination deep neural networks and reinforcement learning, or Deep RL, have emerged as a pragmatic solution~\cite{mnih2015human,silver2017mastering}. The impact of general-purpose Deep RL algorithms cannot be understated; they promise a unified approach to many planning, control, and learning problems. 
+Combining learning and sequential decision making can usher in new applications where algorithms can share information across problem instances, adapt to new scenarios, and be robust to uncertainty.
+From a Software Engineering perspective, this unification allows the community to develop optimized libraries for Deep RL rather each problem domain designing/maintaining problem-specific algorithms.
+
+This is the promise of Deep RL, but industrial production applications of this methodology outside of the benchmark simulators are still relatively rare (e.g., notable exceptions \cite{mirhoseini2017device}). One bottleneck is that real software and physical systems often cannot be queried as efficiently as an optimized simulator. 
+More fundementally, Deep RL algorithms often rely on searching a decision space by exploration--or uninformed random actions. Many sequential problems of interest have very high-dimensional or combinatorial decision spaces. In these high-dimensional spaces useful sequences are vanishingly rare and impractical to discover through purely random search. This is in sharp contrast to the classical algorithms for these sequential problems that exploit structure of the domain to guide the search process. This presents a dilemma for the algorithm designer---either she must pay the cost of random exploration to use Deep RL as is or modify the exploration or learning strategies of the Deep RL algorithms to be competitive with the classical baselines. Designing problem-specific Deep RL algorithm implementations defeats the unifying purpose of using Deep RL in the first place.
+
+I explore the problem of scaling Deep RL to large action spaces in three real-world scenarios: (1) manipulating deformable media with a surgical robot, (2) automatically synthesizing data cleaning programs, and (3) optimizing the execution of relational queries. One of the key algorithmic results is that \textbf{action abstractions}, or how the primitive decisions the agent is allowed to make are represented, is extremely important. For example, does a robot planning algorithm search over every possible torque to apply or does it plan over higher level motions? Similarly, in program synthesis, should we search over every possible composition of a formal language or restrict our search to those we know are correlated with a target specification. This dissertation argues that such structure can be bootstrapped from a limited amount of expert demonstrations. This supervisor might be an human or even another algorithm. I propose models that learn from a small number of these initial expert demonstrations to guide future autonomous exploration. 
+There are two main parts to the dissertation, learning hierarchical action structure from data and using Deep Q Learning for intelligent combinatorial enumeration. 
+
+
+
+
+
+
+

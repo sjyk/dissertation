@@ -1,0 +1,25 @@
+\chapter{Learning Hierarchies From Data}
+\setcounter{secnumdepth}{1}
+\section{Introduction}
+Control policies that perform long and intricate tasks often require high-dimensional parametrization of their policies.  In principle, existing reinforcement learning (RL) algorithms can learn such policies, but often with prohibitive sample complexity.
+One approach is to augment the agent's controls with useful higher-level behaviors called~\cite{suttonPS99}, each consisting of a control policy for one region of the state space, and a termination condition recognizing leaving that region. This augmentation naturally defines a hierarchical structure of high-level \emph{meta-control} policies that invoke lower-level options to solve sub-tasks.
+This leads to a ``divide and conquer'' relationship between the levels, where each option can specialize in short-term planning over local state features, and the meta-control policy can specialize in long-term planning over slowly changing state features.
+
+There are several advantages to considering hierarchical structure for tasks and reward functions rather than flat end-to-end optimization.
+One obvious advantage is that many tasks are naturally repetitive and have self-similar parts.
+For example, in robotic tasks such as surface decluttering, we repeatedly identify, grasp, and remove objects.
+The assumption of a hierarchical structure allows us to identify these commonalities in demonstrations, form larger and richer clusters of subtasks to learn from, and after learning share and recall the learned skills for easier planning.
+More subtly, hierarchical structure can allow the learner to simplify its parametrization by decomposing a task into discrete long-term behaviors and continuous short term behaviors.
+
+Abstractions for decomposing an MDP into subtasks have been studied in the area of hierarchical reinforcement learning (HRL)~\cite{parr98,suttonPS99,barto03}.
+Early work in hierarchical control demonstrated the advantages of hierarchical structures by handcrafting hierarchical policies~\cite{brooks1986robust} and by learning them given various manual specifications: state abstractions~\cite{dayanH92,hengst02,kolterAN07,konidarisB07}, a set of waypoints~\cite{kaelbling93}, low-level skills~\cite{huberG97,baconP15,liaw17composing}, a set of finite-state meta-controllers~\cite{parrR97}, or a set of subgoals~\cite{suttonPS99,dietterich00}.
+
+The key abstraction in HRL is the ``options framework''~\cite{suttonPS99}, which defines a hierarchy of increasingly complex meta-actions.
+ An option represent a lower-level control primitive that can be invoked by the \emph{meta-control} policy at a higher-level of the hierarchy, in order to perform a certain subroutine (a useful sequence of actions).
+The meta-actions invoke specialized policies rather than just taking primitive actions.
+
+ Formally, an option $h$ is described by a triplet \[\langle \mathcal{I}_h, \pi_h, \psi_h \rangle,\] where $\mathcal{I}_h \subset \mathcal{X}$ denotes the initiation set, $\pi_h(u_t \mid x_t)$ the control policy, and $\psi_h(x_t) \in [0,1]$ the termination policy. When the process reaches a state $x \in \mathcal{I}_h$, the option $h$ can be invoked to run the policy $\pi_h$. After each action is taken and the next state $x'$ is reached, the option $h$ terminates with probability $\psi_h(x')$ and returns control up the hierarchy to its invoking level. The options framework enables multi-level hierarchies to be formed by allowing options to invoke other options. A higher-level meta-control policy is defined by augmenting its action space $\mathcal{U}$ with the set $\mathcal{H}$ of all lower-level options. 
+
+The options framework has been applied in robotics~\cite{konidarisKGB12, krishnan2016swirl, sermanet2016unsupervised} and in the analysis of biological systems~\cite{botvinick08,botvinick2009hierarchically,solway2014optimal,zacksKEH11,whitenFBL06}.Since then, the focus of research has shifted towards discovery of the hierarchical structure itself, by: trading off value with description length~\cite{thrunS94}, identifying transitional states~\cite{mcgovernB01,menacheMS02,simsekB04,stolle04,lakshminarayananKKR16}, inference from demonstrations~\cite{buiVW02,krishnan2015transition,daniel2012hierarchical,krishnan2016swirl}, iteratively expanding the set of solvable initial states~\cite{konidarisB09,konidarisKGB12}, policy gradient~\cite{LevyS11}, trading off value with informational constraints~\cite{geneweinLGB15,foxMT16,jonssonG16,florensaDA17}, active learning~\cite{hamidiTGF15}, or recently value-function approximation~\cite{baconHP16,heess2016learning,sharmaLR17}.
+
+

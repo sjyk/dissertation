@@ -1,0 +1,220 @@
+
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+%\usepackage{algorithm}
+%\usepackage{algpseudocode}
+\usepackage{chngcntr}
+\usepackage{dirtytalk}
+\usepackage{dsfont}
+\usepackage[shortcuts]{extdash}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{hyphenat}
+\usepackage{mathtools}
+\usepackage{moresize}
+\usepackage{newunicodechar}
+\usepackage{nicefrac}
+\usepackage{setspace}
+%\usepackage{subcaption}
+\usepackage{titlesec}
+\usepackage{xr}
+\usepackage{xspace}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amscd}
+\usepackage{mathtools}
+
+\makeatletter\@ifclassloaded{ieeeconf}{}{
+	\usepackage{amsmath, amssymb, amscd}
+}\makeatother
+
+\usepackage{cleveref}\newcommand*{\crefrangeconjunction}{--}
+\usepackage[nonumberlist, nopostdot, sort=def]{glossaries}\glsdisablehyper\makenoidxglossaries
+\usepackage{mathabx}
+\usepackage{mleftright}
+\usepackage{pdfpages}
+\usepackage{thmtools}
+\usepackage{zref}
+
+%consecutive equation numbering across chapters
+\makeatletter
+\ifcsname c@chapter\endcsname
+\counterwithout{equation}{chapter}
+\fi
+\makeatother
+\newcommand*\num{\addtocounter{equation}{1}\tag{\theequation}}
+
+\newtheorem{thm}{Theorem}
+\newtheorem{defn}{Definition}
+\newtheorem{lem}{Lemma}
+\newtheorem{prob}{Problem}
+
+
+\newcommand*{\elab}[1]{\label{eq:#1}}
+\newcommand*{\eref}[1]{\eqref{eq:#1}}
+\newcommand*{\slab}[1]{\label{sec:#1}}
+\newcommand*{\sref}[1]{Section~\ref{sec:#1}}
+
+\newcommand*{\B}[1]{\mathbf{#1}}
+\newcommand*{\C}[1]{\mathcal{#1}}
+\newcommand*{\F}[1]{\mathbb{#1}}
+\newcommand*{\R}[1]{\mathrm{#1}}
+\newcommand*{\M}[1]{\strut\smash{#1}}
+\newcommand*{\V}[1]{\texttt{#1}}
+\newcommand*{\Z}[1]{\mathds{#1}}
+
+\DeclareMathOperator{\1}{\Z1}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\let\S\undefined\DeclareMathOperator{\S}{\Sigma}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\D}{\Z D}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\dif}{\partial}
+\DeclareMathOperator{\Do}{do}
+\DeclareMathOperator{\E}{\Z E}
+\DeclareMathOperator{\erf}{erf}
+\DeclareMathOperator{\EVD}{EVD}
+\let\H\undefined\DeclareMathOperator{\H}{\Z H}
+\DeclareMathOperator{\I}{\Z I}
+\DeclareMathOperator{\p}{\Z P}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\range}{range}
+\DeclareMathOperator*{\softmin}{soft\,min}
+\DeclareMathOperator{\spn}{span}
+\DeclareMathOperator{\tr}{tr}
+
+\newcommand*{\+}{\dag}
+\newcommand*{\ccell}[1]{\omit\hfil$\displaystyle#1$\hfil}
+\newcommand*{\const}{\textnormal{const}}
+\newcommand*{\copr}{\pagestyle{fancy}\thispagestyle{fancy}\renewcommand{\headrulewidth}{0pt}\lhead{}\rhead{}\rfoot{\tiny Roy Fox, \the\year}}
+\newcommand*{\dash}{\mathrel{\textnormal{ --- }}}
+\newcommand*{\defeq}{\stackrel{\mathclap{\text{def}}}{=}}
+\newcommand*{\dto}{\twoheadrightarrow}
+\newcommand*{\eq}[1]{\begin{align*}#1\end{align*}}
+\newcommand*{\eqa}[1]{\begin{aligned}#1\end{aligned}}
+\newcommand*{\eqat}[2]{\begin{alignat*}{#1}#2\end{alignat*}}
+\newcommand*{\eqatn}[2]{\begin{alignat}{#1}#2\end{alignat}}
+\newcommand*{\eqdat}[2]{\begin{alignedat}{#1}#2\end{alignedat}}
+\newcommand*{\eqg}[1]{\begin{gather*}#1\end{gather*}}
+\newcommand*{\eqn}[1]{\begin{align}#1\end{align}}
+\newcommand*{\eqs}[1]{\begin{subequations}#1\end{subequations}}
+\newcommand*{\figinc}[3]{\begin{figure}\centering\includegraphics[#1]{#2}\caption{#3}\label{fig:#2}\end{figure}}
+\newcommand*{\figinp}[2]{\begin{figure}\centering\vspace{.5em}\input{#1}\vspace{-.5em}\caption{#2}\label{fig:#1}\end{figure}}
+\newcommand*{\getsto}{\leftrightarrow}
+\newcommand*{\given}{\vert}
+\newcommand*{\idag}{{\rotatebox[origin=c]{180}{$\scriptstyle\dag$}}}
+\newcommand*{\lan}{\langle}
+\newcommand*{\lr}[1]{\mleft(#1\mright)}
+\newcommand*{\lra}[1]{\mleft\lan#1\mright\ran}
+\newcommand*{\lrc}[1]{\mleft\{#1\mright\}}
+\newcommand*{\lrs}[1]{\mleft[#1\mright]}
+\newcommand*{\mat}[1]{\begin{bmatrix}#1\end{bmatrix}}
+\newcommand*{\matr}[1]{\begin{bmatrix*}[r]#1\end{bmatrix*}}
+\newcommand*{\mrlap}{\mathrlap}
+\newcommand*{\nd}{\prec}
+\newcommand*{\nsd}{\preceq}
+\newcommand*{\nn}{\nonumber}
+\newcommand*{\opt}[3]{\eqat{2}{&\ccell{#1}&\quad&#2\\&\ccell{\st}&&#3}}
+\newcommand*{\optn}[3]{\eqatn{2}{&\ccell{#1}&\quad&#2\\&\ccell{\st}&&#3}}
+\newcommand*{\pd}{\succ}
+\newcommand*{\pro}{\mathrel{\propto}}
+\newcommand*{\psd}{\succeq}
+\newcommand*{\ran}{\rangle}
+\newcommand*{\st}{\textnormal{s.t.}}
+\newcommand*{\subs}{\subseteq}
+\newcommand*{\T}{\intercal}
+\newcommand*{\TODO}[1]{\footnote{#1}}
+\renewcommand*{\vdots}{\vbox{\baselineskip=4pt\lineskiplimit=0pt\kern2pt\hbox{.}\hbox{.}\hbox{.}}}
+\newcommand*{\x}{\times}
+\newcommand*{\xto}[1][]{\xrightarrow[#1]{}}
+
+
+
+\newcommand{\detectlib}{\texttt{IsoDetect}\xspace}
+\newcommand{\company}{\texttt{Company X}\xspace}
+\newcommand{\cond}{\textrm{pred}\xspace}
+\newcommand{\dataset}{data set\xspace}
+\newcommand{\datasets}{data sets\xspace}
+\newcommand{\spview}{\textsf{SPView}\xspace}
+\newcommand{\fjview}{\textsf{FJView}\xspace}
+\newcommand{\aggview}{\textsf{AggView}\xspace}
+\newcommand{\hashfunc}[1]{\textsf{hash}(#1)\xspace}
+\newcommand{\hashop}{\textsf{hash}\xspace}
+\newcommand{\nsc}{\textsf{NormalizedSC}\xspace}
+\newcommand{\rsc}{\textsf{RawSC}\xspace}
+
+\newcommand{\avgfunc}{\ensuremath{\texttt{avg} }\xspace}
+\newcommand{\maxfunc}{\ensuremath{\texttt{max} }\xspace}
+\newcommand{\minfunc}{\ensuremath{\texttt{min} }\xspace}
+\newcommand{\histfunc}{\ensuremath{\texttt{histogram\_numeric} }\xspace}
+\newcommand{\countfunc}{\ensuremath{\texttt{count}}\xspace}
+\newcommand{\sumfunc}{\ensuremath{\texttt{sum} }\xspace}
+\newcommand{\varfunc}{\ensuremath{\texttt{var} }\xspace}
+\newcommand{\stdfunc}{\ensuremath{\texttt{std} }\xspace}
+\newcommand{\covfunc}{\ensuremath{\texttt{cov} }\xspace}
+\newcommand{\corrfunc}{\ensuremath{\texttt{corr} }\xspace}
+\newcommand{\medfunc}{\ensuremath{\texttt{median} }\xspace}
+\newcommand{\percfunc}{\ensuremath{\texttt{percentile} }\xspace}
+\newcommand{\havingfunc}{\ensuremath{\texttt{HAVING} }\xspace}
+\newcommand{\selectfunc}{\ensuremath{\texttt{select} }\xspace}
+\newcommand{\ratio}{\ensuremath{\rho }\xspace}
+
+
+\newcommand{\insertion}{\ensuremath{\texttt{INSERT} }\xspace}
+\newcommand{\update}{\ensuremath{\texttt{UPDATE} }\xspace}
+\newcommand{\delete}{\ensuremath{\texttt{DELETE} }\xspace}
+
+\newcommand{\sysfull}{AlphaClean\xspace}
+\newcommand{\sys}{AlphaClean\xspace}
+\newcommand{\sysnospace}{AlphaClean}
+
+
+\newcommand{\tbl}[1]{\textsf{#1}\xspace}
+\newcommand{\field}[1]{\textsf{#1}\xspace}
+\newcommand{\cost}{\textrm{cost}\xspace}
+\newcommand{\ans}{\textsf{ans}\xspace}
+\newcommand{\dans}{\Delta\textsf{ans}\xspace}
+\newcommand{\cqp}{correction query processing\xspace}
+\newcommand{\Cqp}{Correction query processing\xspace}
+
+\newcommand{\reminder}[1]{{{\textcolor{magenta}{\{\{\bf #1\}\}}}\xspace}}
+\newcommand{\ewu}[1]{{{\textcolor{blue}{\{\{\bf ewu:\} #1\}}}\xspace}}
+\newcommand{\mps}[1]{{{\textcolor{red}{\{\{\bf meelap:\} #1\}}}\xspace}}
+\newcommand{\stitle}[1]{\smallskip\noindent\textbf{#1: }}
+\newcommand{\ititle}[1]{\smallskip\noindent\textit{#1: }}
+\newcommand{\btitle}[1]{\smallskip\noindent\textbf{#1}}
+
+
+\definecolor{light-gray}{gray}{0.95}
+\definecolor{mid-gray}{gray}{0.85}
+\definecolor{green}{RGB}{0,176,80}
+\definecolor{darkred}{rgb}{0.7,0.25,0.25}
+\definecolor{darkgreen}{rgb}{0.15,0.55,0.15}
+\definecolor{darkblue}{rgb}{0.1,0.1,0.5}
+\definecolor{orange}{RGB}{237,125,49}
+\definecolor{blue}{RGB}{68,114,196}
+\definecolor{pop}{RGB}{0,21,245}
+
+\newcommand{\white}[1]{{\textcolor{white}{#1}\xspace}}
+\newcommand{\blue}[1]{{\textcolor{blue}{{\bf #1}}\xspace}}
+\newcommand{\orange}[1]{{\textcolor{orange}{{\bf #1}}\xspace}}
+\newcommand{\pop}[1]{{\textcolor{pop}{{\textit{\textbf{#1}}}}\xspace}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+\newcommand{\gray}[1]{\textcolor{light-gray}{#1}}
+
+
+
+
+\newcommand{\specialcell}[2][c]{%
+  \begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
+
+\def\ojoin{\setbox0=\hbox{$\bowtie$}%
+  \rule[-.02ex]{.25em}{.4pt}\llap{\rule[\ht0]{.25em}{.4pt}}}
+\def\leftouterjoin{\mathbin{\ojoin\mkern-5.8mu\bowtie}}
+\def\rightouterjoin{\mathbin{\bowtie\mkern-5.8mu\ojoin}}
+\def\fullouterjoin{\mathbin{\ojoin\mkern-5.8mu\bowtie\mkern-5.8mu\ojoin}}

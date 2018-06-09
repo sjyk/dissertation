@@ -1,0 +1,228 @@
+\section{Learning Sequential Structure From State Demonstrations}
+DDO is an inference algorithm that applies to the supervised demonstration setting where state-action tuples are available. Next, we explored algorithms for leveraging state-demonstrations for structuring RL exploration.
+Like DDO, we apply unsupervised learning to a small number of initial expert demonstrations to structure future autonomous exploration. Leveraging what we can learn from a small dataset of state-demonstrations, instead of decomposing a task into a hierarchy of controllers, we decompose it into a hierarchy of waypoints. First, I present our inference algorithm for learning waypoint structure from state demonstrations. Then, I describe how we incorporated these waypoints into a planner.
+
+\subsection*{Introduction}
+While one could infer such criteria from manual annotations or matching to pre-defined dictionaries of motion templates, labeling consistency and supervisory burden are a concern in \emph{supervised} approaches.
+Complex, high-dimensional data can require a large amount of labels before a viable segmentation model can be learned.
+Similarly, dictionaries of primitives can be incomplete.
+To avoid these problems, \emph{unsupervised} segmentation methods have been long studied ~\cite{viviani1985segmentation,morasso1983three,sternad1999segmentation}.
+Recently, there are several new probabilistic approaches that pose segmentation as a probabilistic inference problem~\cite{barbivc2004segmenting, chiappa2010movement,  alvarez2010switched,kruger2012imitation, niekum2012learning, wachter2015hierarchical}.
+The approaches model a trajectory as generated from a mixture of parametrized dynamical regimes, and an inference procedure learns the dynamical parameters--which can be used to identify time segments at which each regime is active.
+
+Explicitly modeling the dynamics can require learning a large number of parameters.
+This makes such approaches somewhat sensitive to any noise in the dataset, especially when the datasets are small. 
+This sensitivity leads to challenges in applications like robotic surgery.
+The adoption of robot-assisted minimally invasive surgery (RMIS)  generating datasets of kinematic and video recordings of surgical procedures~\cite{gao2014jigsaws}, and where trajectories are collected from teleoperation interfaces.
+With such interfaces, we have observed significant jitter in motion and noise due to time delays~\cite{chuck2017statistical, liangusing}.
+Figure \ref{teaser} plots 10 expert demonstrations of a surgical training task.
+In such a setting, the robustness and stability of the segmentation algorithm are a key concern in surgical segmentation, and to the best of our knowledge, prior work mitigates this issue by leveraging pre-defined dictionaries of motion segments~\cite{lin2006towards, lin2005automatic}.
+
+In many important tasks, while the demonstration motions may vary and be noisy, each demonstration contains roughly the same order of true segments, e.g., well-defined surgical training procedures.
+This consistent, repeated structure can be exploited to infer global segmentation criteria.
+By assuming known sequential segment-to-segment transitions, the problem reduces to identifying a common set of segment-to-segment transition events--not corresponding entire the trajectory segments across the whole dataset.
+This allows us to apply coarser, imperfect motion-based segmentation algorithms first that create a large set of candidate transitions.
+Then, we can filter this set by identifying transition events that occurred at similar times and states.
+Our experiments suggest that this approach has improved robustness and sample-efficiency, while approximating the behavior of more complicated dynamical systems-based approaches in many real problems.
+
+I formalize this intuition into a new hierarchical clustering algorithm for unsupervised segmentation called Transition State Clustering.
+The proposed approach is also relevant to problems in other domains, but this paper will focus on results from surgical applications.
+\tsc first applies a motion-based segmentation model over the noisy trajectories and identifies a set of candidate segment transitions in each.
+\tsc then clusters the transition states (states at times transitions occur) in terms of kinematic, sensory, and temporal similarity. 
+The clustering process is hierarchical where the transition states are first assigned to Gaussian Mixture clusters according to kinematic state, then these clusters are sub-divided using the sensory features, and finally by time.
+We present experiments where these sensory features are constructed from video.
+The learned clustering model can be applied to segment previously unseen trajectories by the same global criteria.
+To avoid setting the number of clusters at each level of the hierarchy in advance, the number of regions are determined by a Dirichlet Process prior.
+A series of merging and pruning steps remove sparse clusters and repetitive loops.
+
+
+\vspace{0.5em}
+
+\noindent \textbf{Example: } As an example of how noise can affect segmentation, consider a system where a spherical ball is dropped until it bounces off a block.
+Under noiseless conditions, most classical segmentation techniques that look for changes in direction (e.g., zero-velocity crossings) or local linearity of motion would identify two segments (Figure \ref{toy-1}).
+If the observations are perturbed by noise, these approaches tend to ``over segment'', where noise can be confused for actual changes in direction.
+If we collect 5 demonstrations from the same system, and
+plot the estimated segment transitions (state of the end point) for each of the noisy demonstrations--we would find that the densest clusters correspond to actual segment endpoints.
+\tsc exploits this property to improve the robustness of motion-based segmentation.
+
+
+\subsection{Transition State Clustering}
+This section describes the problem setting, assumptions, and notation.
+Let $D=\{d_i\}$ be a set of demonstrations of a robotic task.
+Each demonstration of a task $d$ is a discrete-time sequence of $T$ state vectors in a feature-space $\mathcal{X}$.
+The feature space is a concatenation of kinematic features $X$ (e.g., robot position) and sensory features $V$ (e.g., visual features from the environment).
+
+\begin{definition}[Segmentation]
+A segmentation of a task is defined as a function $\mathbf{S}$ that assigns each state in every demonstration trajectory to an integer $1,2,...,k$:
+\[
+\mathcal{S}: d \mapsto (a_n)_{1,...,|d|}, a_n \in {1,...,k}.
+\]
+and $\mathcal{S}$ is a non-decreasing function in time (no repetitions).
+\end{definition}
+
+Suppose we are given a function that just identifies candidate segment endpoints based on the kinematic features.
+Such a function is weaker than a segmentation function since it does not globally label the detected segments.
+This leads to the following definition:
+
+\begin{definition}[Transition Indicator Function]
+A transition indicator function $\mathbf{T}$ is a function that maps each kinematic state in a demonstration $d$ to $\{0,1\}$:
+\[
+\mathbf{T}: d \mapsto (a_n)_{1,...,|d|}, a_n \in {0,1}.
+\]
+\end{definition}
+
+The above definition naturally leads to a notion of transition states, the states and times at which transitions occur.
+
+\begin{definition}[Transition States]
+For a demonstration $d_i$, let $o_{i,t}$ denote the kinematic state, visual state, and time $(x,v,t)$ at time $t$.
+Transition States are the set of state-time tuples where the indicator is 1:
+\[
+\Gamma = \bigcup_{i}^N ~\{o_{i,t} \in d_i ~: \mathbf{T}(d_i)_t = 1\}.
+\]
+\end{definition}
+
+The goal of \tsc is to take the transition states $\Gamma$ and recover a segmentation function $\mathbf{S}$. This segmentation function is stronger than the provided $\mathbf{T}$ since it not only indicates that a transition has occurred but labels the segment transition consistently across demonstrations.
+
+\subsubsection{Assumptions}
+We assume that all possible true segments are represented in each demonstration by at least one transition (some might be false positives).
+Given the segmentation function $\mathcal{S}(d_i)$, one can define a set of \emph{true} transition states:
+\[\Gamma^* = \{
+o_{i,t} \in d_i : ~\mathcal{S}(d_i)_{t-1} \ne \mathcal{S}(d_i)_t,~ t > 0\}.
+\]
+These satisfy the following property:
+\[
+ \Gamma^* \subseteq \Gamma.
+\]
+In other words, we assume that a subset of transition states discovered by the indicator function correspond with the true segment transitions.
+There can be false positives but no false negatives (a demonstration where a segment transition is missed by the transition indicator function).
+Since the segmentation function is sequential and in a fixed order, this leads to a model where we are trying to find the $k-1$ true segment-segment transition points in $\Gamma$.
+
+\subsubsection{Problem Statement and Method Overview}\label{ps}
+These definitions allow us to formalize the transition state clustering problem. 
+
+\begin{problem}[Transition State Clustering]
+Given a set of regular demonstrations $D$ and transition identification function $\mathbf{T}$, find a segmentation $\mathbf{S}$.
+\end{problem}
+
+\noindent \textbf{Candidate Transitions: } To implement $\mathbf{T}$, \tsc fits a Gaussian mixture model to sliding windows over each of the demonstration trajectories and identifies consecutive times with different most-likely mixture components.
+
+\vspace{0.25em}
+
+\noindent \textbf{Transition State Clusters: } The states at which those transitions occur are called transition states.
+\tsc uses a GMM to cluster the transition states in terms of spatial and temporal similarity to find $\mathbf{S}$.
+
+\vspace{0.25em}
+
+\noindent \textbf{Optimizations: } To avoid setting the number of clusters at each level of the hierarchy in advance, the number of regions are determined by a Dirichlet Process prior.
+A series of merging and pruning steps remove sparse clusters and repetitive loops.
+
+\subsubsection{Gaussian Mixture Transition Identification}
+While we can use any transition identification function to get $\Gamma$ (as long as it satisfies the assumptions), we present one implementation based of Gaussian Mixtures that we used in a number of our experiments.
+We found that this GMM approach was scalable (in terms of data and dimensionality) and had fewer hyper-parameters to tune than more complex models.
+Combined with the subsequent hierarchical clustering, this approach proved to be robust in all of our experiments.
+
+\begin{algorithm}[t]
+\caption{Transition Identification \label{ialgotext}}
+\begin{algorithmic}[1]
+\State \textsf{Input: } $D$ demonstrations, $\ell$ a window size, and $\alpha$ a Dirichlet Process prior.
+
+\State For each demonstration, generate a set of sliding windows of $\mathbf{w}^{(\ell)}_t = [\mathbf{x}_{t-\ell},...,\mathbf{x}_{t}]^\intercal$. Let $W$ be the set of all sliding windows across all demonstrations.
+
+\State Fit a mixture model to $W$ assigning each state to its most likely component. 
+
+\State Identify times $t$ in each demonstration when $\mathbf{w}_t$ has a different most likely mixture component than $\mathbf{w}_{t+1}$, start and finish times ($t=0,t=T_i$) are automatically transitions. 
+
+\State \textsf{Return: } A set of transition states $\Gamma$, the $(x,v, t)$ tuples at which transitions occur.
+
+\end{algorithmic}
+
+\end{algorithm}
+
+Each demonstration trajectory $d_i$ is a trajectory of $T_i$ state-vectors $[x_1,...,x_{T_i}]$.
+For a given time $t$, we can define a window of length $\ell$ as:
+\[
+\mathbf{w}^{(\ell)}_t = [s_{t-\ell},...,s_{t}]^\intercal
+\]
+We can further normalize this window relative to its first state:
+\[
+\mathbf{n}^{(\ell)}_t = [s_{t-\ell}-s_{t-\ell},...,s_{t}-s_{t-\ell}]^\intercal
+\]
+This represents the ``delta'' in movement over the time span of a window.
+Then, for each demonstration trajectory we can also generate a trajectory of $T - \ell$ windowed states:
+\[
+\mathbf{d}^{(\ell)} = [\mathbf{n}^{(\ell)}_\ell,...,\mathbf{n}^{(\ell)}_{T}]
+\]
+Over the entire set of windowed demonstrations, we collect a dataset of all of the $\mathbf{n}^{(\ell)}_t$ vectors.
+We fit a GMM model to these vectors.
+The GMM model defines $m$ multivariate Gaussian distributions and a probability that each observation $\mathbf{n}^{(\ell)}_t$ is sampled from each of the $m$ distributions.
+We annotate each observation with the most likely mixture component.
+Times such that $\mathbf{n}^{(\ell)}_t$ and $\mathbf{n}^{(\ell)}_{t+1}$ have different most likely components are marked as transitions.
+This model captures some dynamical behaviors while not requiring explicit modeling of the state-to-state transition function.
+
+Sometimes the MDP's states are more abstract and do not map to space where the normalized windows make sense.
+We can still apply the same method when we only have a positive definite kernel function over all pairs of states $\mathbf{\kappa}(s_i,s_j)$.
+We can construct this kernel function for all of the states observed in the demonstrations and apply Kernelized PCA to the features before learning the transitions--a technique used in Computer Vision~\cite{DBLP:conf/nips/MikaSSMSR98}.
+The top $p'$ eigenvalues define a new embedded feature vector for each $\omega$ in $\mathbb{R}^{p'}$.
+We can now apply the algorithm above in this embedded feature space.
+
+
+\subsubsection{Transition Clustering Algorithm}
+We present the clustering algorithm which is summarized in Algorithm \ref{algotext}.
+In a first pass, the transition states are clustered with respect to the kinematic states, then sub-clustered with respect to the sensory states, and then, we temporally sub-cluster.
+The sub-clusters can be used to formulate the segmentation criteria.
+
+\begin{algorithm}[t]
+\caption{Transition State Clustering \label{algotext}}
+\begin{algorithmic}[1]
+\State \textsf{Input: } $\Gamma$ Transition States, $\rho$ pruning parameter
+
+\State Fit a mixture model to the set of transition states $\Gamma$ in the kinematic states.
+
+\State Fit a mixture model to the sensory features for transitions within every kinematic cluster $i$.
+
+\State Fit a mixture model to the times from every kinematic and sensory cluster pair $(i,j)$.
+
+\State Remove clusters that contain fewer than transition states from fewer than $\rho \cdot N$ distinct demonstrations.
+
+\State \textsf{Output: } A set of transitions, which are regions of the state-space and temporal intervals defined by Gaussian confidence intervals.
+
+\end{algorithmic}
+
+\end{algorithm}
+
+\vspace{0.5em}\noindent\textbf{Kinematic Step: } We want our model to capture that transitions that occur in similar positions in the state-space across all demonstrations are actual transitions, and we would like to aggregate these transitions into logical events. 
+Hypothetically, if we had infinite demonstrations $\Gamma$ would define a density of transition events throughout the state-space.
+The modes of the density, which intuitively represent a propensity of a state $x$ to trigger a segment change, are of key interest to us. 
+
+We can think of the set of identified transition states $\Gamma$ as a sample of this density.
+We fit a DP-GMM to kinematic features of the transition states.
+Each transition state will have an assignment probability to one of the mixture components.
+We convert this to a hard assignment by assigning the transition state to the most likely component.
+
+\vspace{0.5em}\noindent\textbf{Sensory Step: }
+Then, we apply the second level of DP-GMM fitting over the sensory features (if available).
+Within each kinematic cluster, we fit a DP-GMM to find sub-clusters in the sensory features.
+Note that the transitions were only identified with kinematic features.
+This step grounds the detected transitions in sensory clusters.
+
+\vspace{0.5em}\noindent\textbf{Temporal Step: }Finally, we apply the last level of DP-GMM fitting over the time axis.
+Without temporal localization, the transitions may be ambiguous.
+For example, in a figure 8 motion, the robot may pass over a point twice in the same task.
+Conditioned on the particular state-space cluster assignment, we can fit a DP-GMM each to each subset of times.
+The final result contains sub-clusters that are indexed both in the state-space and in time.
+
+\vspace{0.5em}\noindent\textbf{Enforcing Consistency: }
+The learned clusters will vary in size as some may consist of transitions that appear only in a few demonstrations. The goal of \tsc is to identify those clusters that correspond to state and time transition conditions common to all demonstrations of a task.
+We frame this as a pruning problem, where we want to enforce that all learned clusters contain transitions from a fraction of $\rho$ distinct demonstrations.
+Clusters whose constituent transition states come from fewer than a fraction $\rho$ demonstrations are \emph{pruned}.
+$\rho$ should be set based on the expected rarity of outliers.
+For example, if $\rho$ is 100\% then the only mixture components that are found are those with at least one transition state from every demonstration (i.e., the regularity assumption).
+If $\rho$ is less than 100\%, then it means that every mixture component must cover some subset of the demonstrations.
+In our experiments, we set the parameter $\rho$ to 80\% and show the results with and without this step.
+
+\vspace{0.5em}\noindent\textbf{Segmentation Criteria: }
+Finally, if there are $k$ remaining clusters $\{C_1,...,C_k\}$, we can use these clusters to form a criteria for segmentation. 
+Each cluster is formed using a GMM triplet in the kinematic state, visual state, and time.
+The quantiles of the three GMMs will define an ordered sequence of regions $[\rho_1,...,\rho_k]$ over the state-space and each of these regions has an associated time interval defined by the Gaussian confidence interval for some confidence level $z_{\alpha}$.
+
+
