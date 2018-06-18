@@ -1,19 +1,28 @@
 \chapter{Learning Hierarchies From Data}
 \setcounter{secnumdepth}{1}
 \section{Introduction}
-Control policies that perform long and intricate tasks often require high-dimensional parametrization of their policies.  In principle, existing reinforcement learning (RL) algorithms can learn such policies, but often with prohibitive sample complexity.
-One approach is to augment the agent's controls with useful higher-level behaviors called~\cite{suttonPS99}, each consisting of a control policy for one region of the state space, and a termination condition recognizing leaving that region. This augmentation naturally defines a hierarchical structure of high-level \emph{meta-control} policies that invoke lower-level options to solve sub-tasks.
-This leads to a ``divide and conquer'' relationship between the levels, where each option can specialize in short-term planning over local state features, and the meta-control policy can specialize in long-term planning over slowly changing state features.
+While \emph{ab initio} (no prior model) RL  has demonstrated impressive results, it is difficult to apply to many sequential decison problems of interest. 
+In particular, one challenge is high-dimensional and/or combinatorial action spaces.
+ For example, in program synthesis, the search branching factors can extend into the millions~\cite{menon2013machine}. And, in graph search problems, the number of actions available at each expansion grows with the number of connected vertices. From a control theoretic perspective, both of these scenarios are ``perfectly observable''; however, applying existing RL approaches to such problems can still be very challenging (see the challenges in solving Montezuma's revenge~\cite{bellemare2016unifying}).
 
-There are several advantages to considering hierarchical structure for tasks and reward functions rather than flat end-to-end optimization.
-One obvious advantage is that many tasks are naturally repetitive and have self-similar parts.
-For example, in robotic tasks such as surface decluttering, we repeatedly identify, grasp, and remove objects.
-The assumption of a hierarchical structure allows us to identify these commonalities in demonstrations, form larger and richer clusters of subtasks to learn from, and after learning share and recall the learned skills for easier planning.
-More subtly, hierarchical structure can allow the learner to simplify its parametrization by decomposing a task into discrete long-term behaviors and continuous short term behaviors.
+In these high-dimensional action spaces, the vast majority of action sequences are irrelevant to the task at hand.
+Therefore, purely random exploration is likely to be prohibitively wasteful.
+What makes many sequential problems particularly challenging for is that all of these random action sequences are, in a sense, equally irrelevant. 
+This means that there might not be any signal in the sampled data that the Q-learning algorithm can exploit.
+Until the agent serendipitously discovers such a sequence, no learning can occur.
+
+In the first section of this dissertation, I explore this problem in the context of robotics, self-play in atari games, and program imitatation. 
+The basic insight is that while the space of all action sequences $\mathcal{A}^T$ is very large, there is often a much smaller subset of those that are potentially relevant to typical problem instances $\mathcal{A}_{relevant} \subset \mathcal{A}^T$. 
+Given a small amount of expert information, I describe techniques for learning $\mathcal{A}_{relevant}$ from data.
+
+How do we parametrize $\mathcal{A}_{relevant}$?
+One approach is to describe the agent's actions as a composition higher-level behaviors called~\cite{suttonPS99}, each consisting of a control policy for one region of the state space, and a termination condition recognizing leaving that region. This augmentation naturally defines a hierarchical structure of high-level \emph{meta-control} policies that invoke lower-level options to solve sub-tasks.
+This leads to a ``divide and conquer'' relationship between the levels, where each option can specialize in short-term planning over local state features, and the meta-control policy can specialize in long-term planning over slowly changing state features.
+This means that any search can be restricted to the action sequences that can be formed as a composition of skills.
+
 
 Abstractions for decomposing an MDP into subtasks have been studied in the area of hierarchical reinforcement learning (HRL)~\cite{parr98,suttonPS99,barto03}.
 Early work in hierarchical control demonstrated the advantages of hierarchical structures by handcrafting hierarchical policies~\cite{brooks1986robust} and by learning them given various manual specifications: state abstractions~\cite{dayanH92,hengst02,kolterAN07,konidarisB07}, a set of waypoints~\cite{kaelbling93}, low-level skills~\cite{huberG97,baconP15,liaw17composing}, a set of finite-state meta-controllers~\cite{parrR97}, or a set of subgoals~\cite{suttonPS99,dietterich00}.
-
 The key abstraction in HRL is the ``options framework''~\cite{suttonPS99}, which defines a hierarchy of increasingly complex meta-actions.
  An option represent a lower-level control primitive that can be invoked by the \emph{meta-control} policy at a higher-level of the hierarchy, in order to perform a certain subroutine (a useful sequence of actions).
 The meta-actions invoke specialized policies rather than just taking primitive actions.

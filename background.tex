@@ -71,14 +71,6 @@ L(Q) = \sum_{i} \|y_i - Q(s,a)\|_2^2
 \]
 This loss can be optimized with gradient descent. When the state and action space is discrete, the representation of the Q function is a table, and we get the familiar Q-Learning algorithm~\cite{sutton1998reinforcement}--where each gradient step updates the table with the appropriate value. When Q function needs to be approximated, then we get the Deep Q Network algorithm~\cite{mnih2015human}.
 
-\subsection*{High-Dimensional Action Spaces}
-While the DQN algorithm has demonstrated impressive results in learning to play Atari games autonomously~\cite{mnih2015human}, many typical sequential problems have very different characteristics. While partial observability and perceptual uncertainty is significant challenge, an often under appreciated concern is the extension of RL to high-dimensional action spaces. For example, in program synthesis, the search branching factors can extend into the millions~\cite{menon2013machine}. And, in graph search problems, the number of actions available at each expansion grows with the number of connected vertices. From a control theoretic perspective, both of these scenarios are ``perfectly observable''; however, applying existing RL approaches to such problems can still be very challenging (see the challenges in solving Montezuma's revenge~\cite{bellemare2016unifying}).
-In these high-dimensional action spaces, the vast majority of action sequences are irrelevant to the task at hand.
-Therefore, purely random exploration is likely to be prohibitively wasteful.
-What makes many sequential problems particularly challenging is that all of these random action sequences are equally irrelevant. 
-This means that there might not be any signal in the sampled data that the Q-learning algorithm can exploit.
-Until the agent serendipitously discovers such a sequence, no learning can occur.
-
 
 
 
