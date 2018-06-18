@@ -2,37 +2,40 @@
 \section{Background}
 Most of the problems that I will consider have the following sequential decision structure~\cite{bertsekas1995dynamic}:
 \begin{equation}
-\min_{u_1,...,u_T} \sum_{i=1}^T \gamma^i \cdot J(x_i, u_i) 
+\min_{a_1,...,a_T} \sum_{i=1}^T \gamma^i \cdot J(s_i, a_i) 
 \label{eq:main}
 \end{equation}
 \[
-\text{subject to:} ~~ x_{i+1} = f(x_i, u_i)
+\text{subject to:} ~~ s_{i+1} = f(s_i, a_i)
 \]
 \[
-u_i \in \mathcal{U} ~~ x_i \in \mathcal{X} ~~ x_1 = \mathbf{c}
+a_i \in \mathcal{A} ~~ s_i \in \mathcal{S} ~~ s_1 = \mathbf{c}
 \]
-The problem is to select $T$ decisions where each decision $u_i$ resides in an action space $\mathcal{U}$. The decision making problem is stateful where the world has an initial state $x_1$ and this state is affected by every decision the decision-making agent selects through the transition model $f(x_i, u_i)$ which transitions the state to another state in the set $\mathcal{X}$. The objective is to optimize the cumulative cost of these decisions $J(x_i,u_i)$ potentially subject to an exponential discount $\gamma$ that controls a bias towards short term or long term costs. \emph{This dissertation studies how we can scale up such optimization problems to longer time horizons and higher dimensional action spaces.}
+The problem is to select $T$ decisions where each decision $u_i$ resides in an action space $\mathcal{A}$. The decision making problem is stateful where the world has an initial state $s_1$ and this state is affected by every decision the decision-making agent selects through the transition model $f(s_i, a_i)$ which transitions the state to another state in the set $\mathcal{S}$. The objective is to optimize the cumulative cost of these decisions $J(s_i,a_i)$ potentially subject to an exponential discount $\gamma$ that controls a bias towards short term or long term costs. Sometimes the cost is described as a \emph{reward} ($R(s_i,a_i) = - J(s_i,a_a)$) to make the problem a maximization problem:
+\[
+\max_{a_1,...,a_T} \sum_{i=1}^T \gamma^i \cdot J(s_i, a_i) 
+\]
 
 \subsection*{The Q-Function}
 Sequential decision problems are challenging because simply minimizing the cost at each individual time-step (also known as a ``greedy'' solution) is sub-optimal. The decision-making agent needs to consider the long-term value of its actions where one sacrifices a short term benefit for a long term payoff.
-We can concisely describe Equation \ref{eq:main} as the function $V(\mathbf{c})$, i.e., given the initial state $x_1 = \mathbf{c}$, what is the value of acting optimally till the end of the decision horizon--conveniently named the \emph{value function}. Bellman's ``Principle of Optimality'' noted that optimal behavior over an entire decision horizon implies optimal behavior from any starting time $t>1$ as well, which is the basis for the idea of dynamic programming.
-So, $V(\mathbf{c})$ can be then defined recursively for any $x \in \mathcal{X}$:
+We can concisely describe Equation \ref{eq:main} as the function $V(\mathbf{c})$, i.e., given the initial state $s_1 = \mathbf{c}$, what is the value of acting optimally till the end of the decision horizon--conveniently named the \emph{value function}. Bellman's ``Principle of Optimality'' noted that optimal behavior over an entire decision horizon implies optimal behavior from any starting time $t>1$ as well, which is the basis for the idea of dynamic programming.
+So, $V(\mathbf{c})$ can be then defined recursively for any $s \in \mathcal{S}$:
 \begin{equation}
-V(x) = \min_{u \in ~ \mathcal{U} }\{~J(x, u) + \gamma \cdot V( f(x,u) ) ~\}
+V(s) = \min_{a \in ~ \mathcal{A} }\{~J(s, a) + \gamma \cdot V( f(s,a) ) ~\}
 \label{eq:value}
 \end{equation}
 Usually, write this value recursion in the following form:
 \[
-Q(x,u) = J(x, u) + \gamma \cdot V( f(x,u) )
+Q(s,a) = J(s, a) + \gamma \cdot V( f(s,a) )
 \]
 Leading to the following recursive definition of the Q-Function (or cost-to-go function):
 \begin{equation}
-Q(x,u) = J(x, u) + \gamma \cdot \min_{u' \in ~ \mathcal{U} } Q( f(x,u) ,u')
+Q(s,a) = J(s, a) + \gamma \cdot \min_{a' \in ~ \mathcal{A} } Q( f(s,a) ,a')
 \label{eq:q}
 \end{equation}
 
 The Q-Function describes the long-term value of each action at every state. 
-That means at each $x_i$ local optimization of $\min_{u' \in ~ \mathcal{U} } Q(x_i,u')$ is sufficient to derive an optimal sequence of decisions. \emph{In other words, the Q-function determines the solution to the sequential decision problem.} 
+That means at each $s_i$ local optimization of $\min_{a' \in ~ \mathcal{A} } Q(s_i,a')$ is sufficient to derive an optimal sequence of decisions. \emph{In other words, the Q-function determines the solution to the sequential decision problem.} 
 
 In all but the most special of cases, the Q-function cannot be exactly derived analytically (the LQR problem is a notable exception~\cite{kalman1960contributions}. Therefore, solutions to Equation \ref{eq:main} have to be solved through numerical optimization.
 Depending on the nature of the problem, different algorithms can be used (e.g., iLQR~\cite{li2004iterative}, Sequential Convex Programming~\cite{augugliaro2012generation}). Similarly, classical dynamic programming studies the case where sub-problems can be analytically or numerically optimized. In the discrete case, this is exactly the problem of constructing a table to represent the Q-function (also called memoization).
@@ -40,44 +43,42 @@ Depending on the nature of the problem, different algorithms can be used (e.g., 
 \subsection*{Markov Decision Processes}
 The general deterministic framework in Equation \ref{eq:main} can be extended to the stochastic setting.
 In the stochastic setting, the solution is the form of a conditional probability distribution (called a policy) that samples an action given the state.
-We consider a discrete-time discounted Markov Decision Process (MDP), described by a 6-tuple $\langle \mathcal{X}, \mathcal{U}, p_0, p, J, \gamma \rangle$, where $\mathcal{X}$ denotes the state space, $\mathcal{X}$ the action space, $p_0(x_0)$ the initial state distribution, $p(x_{t+1} \mid x_{t}, u_{t})$ the state transition distribution, $J(x_t, u_t) \in \mathbb{R}$ the cost function, and $\gamma \in [0,1)$ the discount factor. A policy $\pi(u_t \mid x_t)$ defines a conditional probability distribution over actions given the state. A trajectory is defined as a sequence of states and actions $\xi = (x_0, u_0, x_1, \ldots, y_T)$ of a given length $T$. In a given MDP, a policy $\pi$ induces the distribution over trajectories:
+We consider a discrete-time discounted Markov Decision Process (MDP), described by a 6-tuple $\langle \mathcal{S}, \mathcal{A}, p_0, p, R, \gamma \rangle$, where $\mathcal{S}$ denotes the state space, $\mathcal{A}$ the action space, $p_0(s_0)$ the initial state distribution, $p(s_{t+1} \mid s_{t}, a_{t})$ the state transition distribution, $R(s_t, a_t) \in \mathbb{R}$ is the reward function (the MDP literature considers maximization), and $\gamma \in [0,1)$ the discount factor. A policy $\pi(a_t \mid s_t)$ defines a conditional probability distribution over actions given the state.  In a given MDP, a policy $\pi$ induces the distribution over trajectories:
 \[
-P_\pi(\xi) = p_0(x_0) \prod_{t=0}^{T-1} \pi(u_t \mid x_t) p(x_{t+1} \mid x_{t}, y_{t}).
+P_\pi(\xi) = p_0(x_0) \prod_{t=0}^{T-1} \pi(a_t \mid s_t) p(s_{t+1} \mid s_{t}, a_{t}).
 \]
 The \emph{return} of a policy is its expected total discounted reward over trajectories
 \[
-V_\pi = \mathbf{E}_{\xi \sim P_\pi}\left[\sum_{t=0}^{T-1} \gamma^t r(x_t,u_t)\right].
+V_\pi = \mathbf{E}_{\xi \sim P_\pi}\left[\sum_{t=0}^{T-1} \gamma^t R(s_t,a_t)\right].
 \]
 
 
 
 \subsection*{Approximating the Q-Function}
-The particular MDP setting of interest is when one only assumes black-box access to $p$ and $J$, i.e., we can only sample them at specified states and actions. There is no local or global structure available to the algorithm \emph{a priori}. Without any structure the only way to truly compute an arbitrary Q-function is to exhaustively enumerate all possible action sequences $(u_i)^T$. This is at best exponential (in the discrete case) and at worst impossible (in the continuous case). This challenge forms a key motivation of a general class of algorithms called Reinforcement Learning~\cite{sutton1998reinforcement}, where statistical machine learning techniques are used to approximate optimal behavior while observing substantially less data that full enumeration. 
+The particular MDP setting of interest is when one only assumes black-box access to $p$ and $R$, i.e., we can only sample them at specified states and actions. There is no local or global structure available to the algorithm \emph{a priori}. Without any structure the only way to truly compute an arbitrary Q-function is to exhaustively enumerate all possible action sequences $(a_i)^T$. This is at best exponential (in the discrete case) and at worst impossible (in the continuous case). This challenge forms a key motivation of a general class of algorithms called Reinforcement Learning~\cite{sutton1998reinforcement}, where statistical machine learning techniques are used to approximate optimal behavior while observing substantially less data that full enumeration. 
 
 In the popular Q-Learning approach~\cite{sutton1998reinforcement}, the algorithm enumerates random samples of action sequences containing $(x,u,r, x')$ tuples forming a trajectory. From these tuples, one can calculate the following value:
 \[
-y_i = R(x,u) + \arg \max_{u} Q(x',u)
+y_i = R(s,a) + \arg \max_{a} Q(s',a)
 \]
 Each of the $y_i$ can be used to define a loss function since if $Q$ were the true Q function, then the following recurrence would hold:
 \[
-Q(x,u) = R(x,u) + \arg \max_{u} Q(x',u)
+Q(s,a) = R(s,a) + \arg \max_{a} Q(s',a)
 \]
 So, Q-Learning defines a loss:
 \[
-L(Q) = \sum_{i} \|y_i - Q(x,u)\|_2^2
+L(Q) = \sum_{i} \|y_i - Q(s,a)\|_2^2
 \]
 This loss can be optimized with gradient descent. When the state and action space is discrete, the representation of the Q function is a table, and we get the familiar Q-Learning algorithm~\cite{sutton1998reinforcement}--where each gradient step updates the table with the appropriate value. When Q function needs to be approximated, then we get the Deep Q Network algorithm~\cite{mnih2015human}.
 
 \subsection*{High-Dimensional Action Spaces}
 While the DQN algorithm has demonstrated impressive results in learning to play Atari games autonomously~\cite{mnih2015human}, many typical sequential problems have very different characteristics. While partial observability and perceptual uncertainty is significant challenge, an often under appreciated concern is the extension of RL to high-dimensional action spaces. For example, in program synthesis, the search branching factors can extend into the millions~\cite{menon2013machine}. And, in graph search problems, the number of actions available at each expansion grows with the number of connected vertices. From a control theoretic perspective, both of these scenarios are ``perfectly observable''; however, applying existing RL approaches to such problems can still be very challenging (see the challenges in solving Montezuma's revenge~\cite{bellemare2016unifying}).
-
 In these high-dimensional action spaces, the vast majority of action sequences are irrelevant to the task at hand.
 Therefore, purely random exploration is likely to be prohibitively wasteful.
 What makes many sequential problems particularly challenging is that all of these random action sequences are equally irrelevant. 
 This means that there might not be any signal in the sampled data that the Q-learning algorithm can exploit.
 Until the agent serendipitously discovers such a sequence, no learning can occur.
-One way to think about this challenge is that the set of ``useful'' actions lies on a much lower dimensional subspace.
-This dissertation proposes different techniques to learn and parametrize this subspace from observational data.
+
 
 
 

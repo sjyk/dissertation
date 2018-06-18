@@ -23,13 +23,13 @@ The search process can be restricted to those sequences that are similar to the 
 
 One algorithmic contribution is a new learning framework for discovering a class of common \emph{meta actions}, common subsequences of decisions, from expert data. Learning this structure can reduce the effective search horizon and the branching factor of the problem. I consider this problem in different setting where one has full observation of the expert (Section \ref{ddco}) and where one only observes the states that the expert visits (Section \ref{swirl}). I present experimental results on simulated robotics benchmarks, accelerating learning in self-play of Atari games, program imitation, and manipulating deformable media with a real surgical robot.
 
-I also study how ideas from Deep RL can improve combinatorial search problems in database systems.
+I also study how ideas from Deep RL can improve combinatorial search problems in database systems (Chapter \ref{comb}).
 The basic insight is that Q-function based Deep RL algorithms are a form of approximate dynamic programming.
 Instead of exactly memoizing expansions in a table with cost-to-go estimates as in dynamic programming, we can represents this table with a neural network of a fixed size.
 This allows the algorithm to ``estimate'' the cost-to-go of paths even if they have not been previously enumerated--allowing the algorithm to aggressively prune paths that are estimated to be costly.
-Hardware and software trends have made inference on neural networks significantly faster over the past several years making this a viable approach even in latency sensitive applications.
+Hardware and software trends have made inference on neural networks significantly faster over the past several years making this a viable approach even in latency sensitive applications~\cite{tpu}.
 I present experimental results on synthesizing data cleaning programs and optimizing the execution of relational queries.
-
+In these two applications, I show to how generate data to train the neural network and how to integrate those estimates into classical dynamic programs.
 
 
 

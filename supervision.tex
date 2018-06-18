@@ -2,10 +2,10 @@
 It should now be clear that discovering a viable policy purely through exploration can be extremely difficult, especially if there are narrow criteria for task success.
 In long tasks, it can be very difficult to quantify the advantage of taking a particular action without a large number of repeated trials. This section describes the notion of expert information, or demonstrations, that can be leveraged to structure the search problem.
 
-All of the proposed techniques in the following section assume access to a supervisor, who samples from an unknown policy $\pi: S \mapsto \Delta(A)$ that maps states to a probability distribution over actions. These samples form sequences of length $T$ called demonstrations. 
+All of the proposed techniques in the following sections assume access to a supervisor, who samples from an unknown policy $\pi: S \mapsto \Delta(A)$ that maps states to a probability distribution over actions. These samples form sequences of length $T$ called demonstrations. 
 The goal of these demonstrations is to provide an initial dataset from which we can learn about the structure of the MDP. As we will later see, these demonstrations are not necessarily provided by a human and can be derived from another algorithm.
 
-\subsection{Imitation Learning}
+\subsection*{Imitation Learning}
 The study of learning control policies from demonstrations is called imitation learning~\cite{osa2018algorithmic}. In the most basic form, a demonstration is defined as follows consisting of a sequence of state, action, reward tuples. 
 
 \begin{definition}[Demonstration]
@@ -65,19 +65,9 @@ In this problem setting, the data cannot be directly used to derive a controller
 The either actions must be implicitly inferred from a inverse dynamics model or the data must be used to learn general task structure.
 Examples include the work on Time Constrastive Networks~\cite{sermanet2017time}, third-person imitation learning~\cite{stadie2017third}, and watch-and-patch~\cite{wu2018watch}.
 
-\subsection{Between Imitation and Reinforcement}
+\subsection*{Between Imitation and Reinforcement}
 However, imitation learning places a significant burden on the supervisor to exhaustively cover the scenarios the robot may encounter during execution~\cite{laskey2017iterative}.
 To address the limitations on either extreme of imitation and reinforcement, this dissertation proposes a hybrid of the exploration and demonstration learning paradigms. This is an idea that has gotten recent traction in the robot learning community~\cite{duan2017one, james2017transferring}. I explore this problem in detail and study different learning methodologies to combine a small amount of expert data with exploration based algorithms. A common theme in all of the projects is to apply unsupervised learning techniques to a small number of initial expert demonstrations to structure future autonomous exploration. In different projects, we explore different structure learning tasks.
-
-One such structure is hierarchy.
-Real-world tasks often naturally decompose into a sequence of simpler, locally-solvable sub-tasks.
-For example, an assembly task might decompose into completing the part's constituent sub-assemblies or a surgical task might decompose into a sequence of movement primitives.
-Or a program synthesis problem might have various stages (functions) that need to be completed to meet the specification.
-Such structure imposes a strong prior on the class of successful policies and can focus exploration in reinforcement learning.
-It reduces the effective time horizon of learning to the start of the next subtask rather than until task completion.
-I present algorithms for learning such structure from all three types of demonstrations in Section \ref{ddco} and Section \ref{swirl}.
-
-Additionally, we find that in many search problems, the vast majority of actions are simply irrelevant to the task at hand. The relevant action sequences lie on a subspace and this subspace can be transferred between instances of the task. I show how algorithms similar to DQN can be used to learn such subspaces and restrict tree-based enumeration algorithms to search along the subspaces of actions that are likely to have value. I present results in Section \ref{ac} for data cleaning program synthesis and Section \ref{rlqopt} for SQL query optimization.
 
 
 
