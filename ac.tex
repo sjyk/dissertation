@@ -1,4 +1,4 @@
-\section{Learning to Clean Data}
+\chapter{Reinforcement Learning For Data Cleaning}
 It is widely known that data cleaning is one of the most time-consuming steps of the data analysis process~\cite{nytimes}, and
 designing algorithms and systems to automate or partially automate data cleaning continues to be an active area of research~\cite{DBLP:conf/sigmod/ChuIKW16}.
 Automation in data cleaning is challenging because real-world data is highly variable. 
@@ -47,7 +47,7 @@ Across 8 real-world datasets used in prior data cleaning literature, we show tha
 \end{itemize}
 
 
-\subsection{Problem Setup}
+\section{Problem Setup}
 First, we overview the basic formalism of \sys and present its relationship to related work.
 We focus on data transformations that concern a single relational table. 
 Let $R$ be a relation over a set of attributes $A$,  $\mathcal{R}$ denote the set of all possible relations over $A$, and $r.a$ be the attribute value of $a \in A$ for row $r \in R$.
@@ -139,7 +139,7 @@ By searching through all possible programs up to length 3 in $L$, we can find a 
 \end{example}
 
 
-\subsubsection{Approach Overview and Challenges}
+\subsection*{Approach Overview and Challenges}
 Our problem formulation is a direct instance of {\it planning} in AI~\cite{russell1995modern}, where an agent identifies a sequence of actions to achieve a goal.  In our setting, the agent (\sys) explores a state space ($\mathcal{R}$) from an initial state (the input relation) by following transitions (applying $T_i \in \Sigma$) such that the sequence of actions is valid (within $\Sigma^*$) and the quality of the final state ($Q(R_{final})$) is maximized.  
 
 For readers familiar with stochastic processes, this search problem is equivalent to a deterministic Markov Decision Process (MDP), where the states are $\mathcal{R}$, the actions $\Sigma$, the transition function updates the instance with the transformation, the initial state is the dirty instance $R_{dirty}$, and the reward function is $Q$.
@@ -154,7 +154,7 @@ recent successes in similar planning problems---ranging from AlphaGo~\cite{silve
 Not every problem instance is as pathological as the worst case complexity suggests, and there are many reasonable local optima.
 
 
-\subsection{Architecture and API}
+\section{Architecture and API}
 \begin{figure}[t]
 % \vspace{-5pt}
 \centering
@@ -183,7 +183,7 @@ Finally, once search component outputs the cleaning program $p^*$, the {\it Prog
 These simple optimizations improve the final program runtime by up-to 20x, and we leave further improvements to future work (e.g., could be optimized with a framework like Weld~\cite{palkar2017weld}).
 
 
-\subsection{Search Algorithm}
+\section{Search Algorithm}
 We now provide an overview of \sys's search algorithm and optimizations.
 
 % The optimization algorithm takes a quality function, a language, and a dirty relation, and outputs a sequence of transformations (of max depth $k$) that maximizes the quality function.
@@ -220,7 +220,7 @@ $P = \{NOOP\}$
 \end{algorithm}
 }
 
-\subsubsection{Naive Search Procedures}
+\subsection*{Naive Search Procedures}
 In principle, any tree search algorithm over $L$ would be correct.
 However, the traversal order and expansion policy is important in this search problem.  We describe the algorithmic and practical reasons why two naive procedures---breadth-first search (BFS) and depth-first search (DFS)---exhibit poor search runtimes.
 
@@ -235,7 +235,7 @@ However, the traversal order and expansion policy is important in this search pr
 \stitle{DFS} Depth-first search only needs to materialize the intermediate results for a single program at a time, however it is highly inefficient since the vast majority of programs that it explores will have low quality scores.  
 
 
-\subsubsection{Search Algorithm and Optimizations}
+\subsection*{Search Algorithm and Optimizations}
 Best-first search expands the most promising nodes chosen according to a specified cost function.
 We consider a greedy version of this algorithm, which removes nodes on the frontier that are more than $\gamma$ times worse than the current best solution (\Cref{alg:main}).
 Making $\gamma$ smaller makes the algorithm asympotically consistent but uses more memory to store the frontier, whereas $\gamma=1$ is a pure greedy search with minimal memory requirements.  
@@ -284,10 +284,10 @@ The main insight in block-wise cleaning is that many errors are local to a small
 
 
 
-\subsection{Experiments}\label{s:exp}
+\section{Experiments}\label{s:exp}
 Next, we present experimental results that suggest three main conclusions: (1) as a single framework, \sys can achieve parity in terms of accuracy with state-of-the-art approaches to a variety of different problems ranging from integrity constraint satisfaction, statistical data cleaning, and also data cleaning for machine learning, (2) it is possible to significantly reduce the runtime gap between \sys and specialized frameworks using simple pruning and distributed parallelization techniques, and (3) \sys enables automatic data cleaning for datasets containing a mixture of error types in an acceptable amount of time.  
 
-\subsubsection{Datasets and Cleaning Tasks}
+\subsection*{Datasets and Cleaning Tasks}
 We list the main characteristics of the 8 experimental datasets.
 
 \stitle{Flight} The flight dataset~\cite{data-flights} contains arrival time, departure time, and gate information aggregated from 3 airline websites (AA, UA, Continental), 8 airport websites (e.g., SFO, DEN), and 27 third-party websites.
@@ -327,7 +327,7 @@ We downloaded this dataset and sought to understand whether terrorist attacks ha
     \caption{\small Comparison with denial constraint systems on the Flight dataset.  (A) \sys (AC) matches or exceeds the accuracy of the specialized systems.  (B) The structure of the data errors, along the learning and parallelization (AC+L x64) lets \sys scale sub-linearly and outperform all but HoloClean's reported runtimes.  \label{exp1a}}
 \end{figure}
 
-\subsubsection{Denial Constraints}
+\subsection*{Denial Constraints}
 Denial constraints express a wide range of integrity constraints and form the basis of many data cleaning systems.  Although \sys may not fully enforce integrity constraints, we can compose a quality function can quantifies the number of constraint violations and find transformation that reduce the number of violations.    We use the Flight dataset for these experiments.
 
 % Several data cleaning systems use Denial Constraints for constraint specification.  While \sys does not enforce integrity constraints, we can create a data quality objective function that quantifies the number of unsatisfied constraints.  This will search over a set of transformations that maximally satisfy these constraints.
@@ -365,7 +365,7 @@ Physician: $100\%$ prec, $84\%$, $3.4$hrs.
     \caption{\small Quantitative data cleaning on census and EEG datasets for a classification application.  \sys tranformation can clip outliers or set them to a default value. (A) \sys ha higher accuracy than outlier detection algorithms (MCD, dBoost), and \sys with a single transform template (DO).  (B) Optimizations improve \sys runtime by over an order of magnitude.  \label{exp2a}}
 \end{figure}
 
-\subsubsection{Quantitative Data Cleaning}\label{s:expquant}
+\subsection*{Quantitative Data Cleaning}\label{s:expquant}
 This experiment performs numerical cleaning on machine learning data.  In these applications, prediction labels and test records are typically clean and available (e.g., results of a sales lead), whereas the training features are often integrated from disparate sources and exhibit considerable noise (e.g., outliers).  Our quality function is simply defined as the model's accuracy on a training hold-out set, and we report the test accuracy on a separate test set.
 
 We trained a binary classification random forest model using \texttt{sklearn} on the Census and EEG datasets.  We used standard featurizers (hot-one encoding for categorical data, bag-of-words for string data, numerical data as is) similar to~\cite{gokhale2014corleone}. 
@@ -408,7 +408,7 @@ Vanilla \sys (AC) is nearly $10\times$ slower than MCD, but the adding learning 
     \caption{The Global Terrorism Database is a dataset of terrorist attacks scraped from news sources since 1970. (A) Shows that \sys can integrate many different forms of cleaning that were previously handled by disparate systems, (B) \sys achieves a competitive runtime to using all of the different system and accounting for data transfer time between them. \label{exp7a}}
 \end{figure}
 
-\subsubsection{Schema Integration}
+\subsection*{Schema Integration}
 We now evaluate cleaning on the stock dataset~\cite{data-flights} from 55 different sources that contains a mixture of schema integration and functional dependency errors.
 
 \vspace{0.5em}\noindent\textbf{Baselines: } We compare approaches for each error type in isolation.  Schema Integration  (SI) matches attributes based on attribute name string similarity, and Data Cleaning (DC) assumes schemas are consistent and enforces functions dependencies using a restricted chase~\cite{benedikt2017benchmarking}.
@@ -428,7 +428,7 @@ We now evaluate cleaning on the stock dataset~\cite{data-flights} from 55 differ
  \label{fig:microbenchmarks}}
 \end{figure*}
 
-\subsubsection{Mixing Error Classes}\label{s:expterror}
+\subsection*{Mixing Error Classes}\label{s:expterror}
 This experiment, we use the multi-error Terrorism dataset~\cite{data-terrorism}. 
 
 \stitle{Baselines} We hand-coded blocking-based entity matching (EM)  and restricted chase (FD) algorithms in Python, and used dBoost for missing values.  We also ran EM, dBoost, and Chase serially on the dataset (Combined). 
@@ -465,10 +465,10 @@ This experiment, we use the multi-error Terrorism dataset~\cite{data-terrorism}.
 \end{figure*}
 
 
-\subsubsection{\sys In Depth}
+\subsection*{\sys In Depth}
 This subsection uses the FEC setup to study the parameters that affect \sys's accuracy and runtime, the robustness of its cleaning programs, and its algorithmic properties.
 
-\subsubsection{Algorithmic Sensitivity}
+\subsection*{Algorithmic Sensitivity}
 
 \stitle{Block-wise Cleaning} Partitioning the dataset into smaller blocks effectively reduces the problem complexity.  This can have tremendous performance benefits when each block exhibits very few errors that are independent of the other blocks.  \Cref{fig:microbenchmarks}a shows the performance benefits when varying the block size; we define the blocks by partitioning on three different attributes that have different domain sizes.  Reducing the block size directly improves the runtime; the search is effectively non-terminating when blocking is not used.    
 
@@ -494,7 +494,7 @@ We evaluate this by artificially coupling between 1-10 records together, and cre
 
 
 
-\subsubsection{Cleaning Generalization and Overfitting}\label{s:expoverfit}
+\subsection*{Cleaning Generalization and Overfitting}\label{s:expoverfit}
 An important characteristic of generating cleaning solutions as {\it programs} is that we can evaluate the program's robustness in terms of machine learning concepts such as overfitting and generalization.    To this end, we examine two concepts in the context of data cleaning: regularizaton and overfitting.  We also find that \sys's high level interface is helpful for iteratively tuning the cleaning process.
 
 \stitle{Regularization}  Misspecified quality functions can cause \sys to output poorly performing cleaning programs.  We simulate this by adding random noise to the output of the quality function. \Cref{fig:sensitivity}A plots the F1-score of \sys on the FEC experiment while varying the amount of noise.  As expected, the output program's F1-score rapidly degrades as the noise increases.  
@@ -516,7 +516,7 @@ Indeed we find an interesting trade-off.  The 1 attribute predicate performed wo
 % This result highlights an important point overly specific rules may not apply to future data, and overly general rules, might introduce unwanted side-effects.
 
 
-\subsubsection{Scaling}
+\subsection*{Scaling}
 Next, we present preliminary results illustrating the scaling properties of \sys. 
 
 \vspace{1em}
@@ -531,7 +531,7 @@ The single threaded No Opt setting runs in $4432$s, and the materialization opti
 
 
 
-\subsubsection{Program Structure}
+\subsection*{Program Structure}
 Finally, we present results describing the structure of the data cleaning programs found with \sys.
 It is often the case that the program found by \sys is a concise description of the needed data cleaning operations, that is, the total number of cell edits is much larger than the length of the program.
 We consider the FEC dataset, the EEG dataset, and GTD dataset.

@@ -1,78 +1,64 @@
-\setcounter{secnumdepth}{0}
-\section{Background}
-Most of the problems that I will consider have the following sequential decision structure~\cite{bertsekas1995dynamic}:
-\begin{equation}
+\vspace{0.5em}
+
+\section{Background and Related Work}
+
+\subsection{Philosophy}
+First, I present a brief background and discussion about Markov Decision Processes and their ubiquity in Computer Science. The solutions of many problems of interest have reductions to optimal policy search in an MDP.
+
+\vspace{0.5em}\noindent \textbf{Graph Search~\cite{russell2016artificial}: } A graph search problem instance is defined as follows. Let $G=(V,E)$ be a graph with vertices $V$ and edges $E$, and let $q \in V$ denote a starting vertex and $t \in V$ denote a target vertex. Find a path connected by edges from $q$ to $t$. In MDP notation, we can consider a hypothetical agent whose state is a pointer to a vertex, its actions are moving to an adjacent vertex, the transition executes this move, and its reward function is an indicator of whether the state is $t$. More formally, $\mathcal{S} = V$, $\mathcal{A} = S \times S$, $R = \mathbf{1}(s_t = t)$, and $p_0 = q$. A discount factor of $\gamma = 1$ specifies that any path is optimal, and $\gamma < 1$ specifies that shorter paths are preferred.
+
+\vspace{0.5em}\noindent \textbf{Empirical Risk Minimization~\cite{shalev2014understanding}: } In empirical risk minimization, one is given a set of tuples $(X,Y) = {(x_0,y_0),...,(x_N,y_N)}$ and the objective is to find a function that minimizes $f: X \mapsto Y$ that minimizes some point-wise measure of disagreement called a loss function $\sum_{i=0}^N \ell(f(x_i),y_i)$. In MDP notation, this is a ``stateless'' problem.  The agent's state is a randomly chose example $\mathcal{S} = X$, its action space is $Y$, and the reward function is the loss function.
+
+\vspace{0.5em}\noindent \textbf{Optimal Control~\cite{bertsekas1995dynamic}: } Deterministic Optimal control problems also constitute Markov Decision Process problems:
+\[
 \min_{a_1,...,a_T} \sum_{i=1}^T \gamma^i \cdot J(s_i, a_i) 
-\label{eq:main}
-\end{equation}
+\]
 \[
 \text{subject to:} ~~ s_{i+1} = f(s_i, a_i)
 \]
 \[
 a_i \in \mathcal{A} ~~ s_i \in \mathcal{S} ~~ s_1 = \mathbf{c}
 \]
-The problem is to select $T$ decisions where each decision $u_i$ resides in an action space $\mathcal{A}$. The decision making problem is stateful where the world has an initial state $s_1$ and this state is affected by every decision the decision-making agent selects through the transition model $f(s_i, a_i)$ which transitions the state to another state in the set $\mathcal{S}$. The objective is to optimize the cumulative cost of these decisions $J(s_i,a_i)$ potentially subject to an exponential discount $\gamma$ that controls a bias towards short term or long term costs. Sometimes the cost is described as a \emph{reward} ($R(s_i,a_i) = - J(s_i,a_a)$) to make the problem a maximization problem:
-\[
-\max_{a_1,...,a_T} \sum_{i=1}^T \gamma^i \cdot J(s_i, a_i) 
-\]
+The problem is to select $T$ decisions where each decision $u_i$ resides in an action space $\mathcal{A}$. The decision making problem is stateful where the world has an initial state $s_1$ and this state is affected by every decision the decision-making agent selects through the transition model $f(s_i, a_i)$ which transitions the state to another state in the set $\mathcal{S}$. The objective is to optimize the cumulative cost of these decisions $J(s_i,a_i)$ potentially subject to an exponential discount $\gamma$ that controls a bias towards short term or long term costs.
 
-\subsection*{The Q-Function}
-Sequential decision problems are challenging because simply minimizing the cost at each individual time-step (also known as a ``greedy'' solution) is sub-optimal. The decision-making agent needs to consider the long-term value of its actions where one sacrifices a short term benefit for a long term payoff.
-We can concisely describe Equation \ref{eq:main} as the function $V(\mathbf{c})$, i.e., given the initial state $s_1 = \mathbf{c}$, what is the value of acting optimally till the end of the decision horizon--conveniently named the \emph{value function}. Bellman's ``Principle of Optimality'' noted that optimal behavior over an entire decision horizon implies optimal behavior from any starting time $t>1$ as well, which is the basis for the idea of dynamic programming.
-So, $V(\mathbf{c})$ can be then defined recursively for any $s \in \mathcal{S}$:
-\begin{equation}
-V(s) = \min_{a \in ~ \mathcal{A} }\{~J(s, a) + \gamma \cdot V( f(s,a) ) ~\}
-\label{eq:value}
-\end{equation}
-Usually, write this value recursion in the following form:
-\[
-Q(s,a) = J(s, a) + \gamma \cdot V( f(s,a) )
-\]
-Leading to the following recursive definition of the Q-Function (or cost-to-go function):
-\begin{equation}
-Q(s,a) = J(s, a) + \gamma \cdot \min_{a' \in ~ \mathcal{A} } Q( f(s,a) ,a')
-\label{eq:q}
-\end{equation}
+\vspace{0.5em}\noindent \textbf{Reinforcement Learning~\cite{sutton1998reinforcement}: } RL is nothing more than an optimization algorithm for general MDP problems. The key distinction between classical algorithms for special cases above is that RL only assumes \emph{oracular} access to the transition model $p$ and the reward function $R$. This means the algorithm can only query the transition model with a particular action and then evaluate the resultant reward. This relaxes the restriction of any analytic knowledge about the structure of $R$ or $p$, and only requires a system model that can be queried (e.g., written in code). The promise is that many of the problems of interest in Computer Science can be expressed in the same general framework, compared, and optimized with the same set of algorithms. 
+However, in practice, the lack of knowledge of $R$ and $p$ are significant impediments. With no prior knowledge of which actions lead to rewards any RL algorithm has to essentially start with random decisions, and even when the algorithm observes a positive signal it has no notion of directionality. 
 
-The Q-Function describes the long-term value of each action at every state. 
-That means at each $s_i$ local optimization of $\min_{a' \in ~ \mathcal{A} } Q(s_i,a')$ is sufficient to derive an optimal sequence of decisions. \emph{In other words, the Q-function determines the solution to the sequential decision problem.} 
+A number of ``hybrid'' RL approaches have been proposed that assume further structure. For example, \cite{levine2016end} consider a model where $p$ can be approximated with locally linear models and $R$ can be approximated with a locally quadratic model. Modern ``model-based'' RL plays similar tricks by learning analytic structures to represents the system transition dynamics~\cite{mrl}. However, these model-based RL techniques still suffer from the same issues that noted in the model-free case. The algorithm still has to simultaneously learn which features are valuable for making a decision in a state while also searching through the space of decisions to figure out which sequence of decisions are valuable. A failure to learn means that the algorithm cannot intelligently search the space of decisions, and a failure to find promising sequences early means that the algorithm cannot learn.
+This creates a fundamentally unstable algorithm setting, where the hope is the algorithm discovers good decision sequences by chance and can bootstrap from these relatively rare examples. 
 
-In all but the most special of cases, the Q-function cannot be exactly derived analytically (the LQR problem is a notable exception~\cite{kalman1960contributions}. Therefore, solutions to Equation \ref{eq:main} have to be solved through numerical optimization.
-Depending on the nature of the problem, different algorithms can be used (e.g., iLQR~\cite{li2004iterative}, Sequential Convex Programming~\cite{augugliaro2012generation}). Similarly, classical dynamic programming studies the case where sub-problems can be analytically or numerically optimized. In the discrete case, this is exactly the problem of constructing a table to represent the Q-function (also called memoization).
+Thus, I argue that the lack of an explicit model is not the only bottleneck in RL, but rather as apparent from the MDP reductions, Deep RL conflates statistical learning with sequential search. The former is a continuous optimization problem that minimizes disagreement with a loss and the latter is discrete problem of enumerating the most relevant state-action pairs. Expert data allows us disentangle the distinct problems of search and learning can greatly improve the stability and efficiency of Deep RL implementations in practice--making model-free RL practical and beneficial in a number of domains. The search process can be restricted to those sequences that are similar to the supervision. This allows from a stronger signal to learn from, while keeping the learning framework sufficiently general.
 
-\subsection*{Markov Decision Processes}
-The general deterministic framework in Equation \ref{eq:main} can be extended to the stochastic setting.
-In the stochastic setting, the solution is the form of a conditional probability distribution (called a policy) that samples an action given the state.
-We consider a discrete-time discounted Markov Decision Process (MDP), described by a 6-tuple $\langle \mathcal{S}, \mathcal{A}, p_0, p, R, \gamma \rangle$, where $\mathcal{S}$ denotes the state space, $\mathcal{A}$ the action space, $p_0(s_0)$ the initial state distribution, $p(s_{t+1} \mid s_{t}, a_{t})$ the state transition distribution, $R(s_t, a_t) \in \mathbb{R}$ is the reward function (the MDP literature considers maximization), and $\gamma \in [0,1)$ the discount factor. A policy $\pi(a_t \mid s_t)$ defines a conditional probability distribution over actions given the state.  In a given MDP, a policy $\pi$ induces the distribution over trajectories:
-\[
-P_\pi(\xi) = p_0(x_0) \prod_{t=0}^{T-1} \pi(a_t \mid s_t) p(s_{t+1} \mid s_{t}, a_{t}).
-\]
-The \emph{return} of a policy is its expected total discounted reward over trajectories
-\[
-V_\pi = \mathbf{E}_{\xi \sim P_\pi}\left[\sum_{t=0}^{T-1} \gamma^t R(s_t,a_t)\right].
-\]
+\subsection{Imitation Learning}
+The study of learning control policies from demonstrations is called imitation learning~\cite{osa2018algorithmic}. Imitation learning factors out the search portion of RL and simply finds a policy that best matches an experts demonstration. Consider a worker in a factory moving a robot with a joystick. Here the objective of the worker is unknown but simply a trajectory of states and action. Similarly, in programming-by-examples, one only observes input and output data and not a complete specification of the program. 
 
+Such a setting is used in works such as DAgger~\cite{ross2011reduction}, DART~\cite{laskey2017iterative}, and  several others in the robotics community~\cite{osa2018algorithmic}. In the most basic form, such a problem reduces to Maximum Likelihood Estimation. We model the system as discrete-time, having at time $t$ a state $s_t$ in some state space $\C S$, such that applying the control $a_t$ in control space $\C A$ induces a stochastic state transition $s_{t+1}\sim p(s_{t+1}|s_t,a_t)$. The initial state is distributed $s_0\sim p_0(s_0)$. We assume that the set of demonstrations consists of trajectories, each a sequence of states and controls $\xi = (s_0, a_0, s_1, \ldots, s_T)$ of a given length $T$.
 
+A policy $\pi_\theta(a_t \given s_t)$ defines the distribution over controls given the state, parametrized by $\theta\in\Theta$. In Behavior Cloning (BC), we train the parameter $\theta$ so that the policy fits the dataset of observed demonstrations and imitates the supervisor. For example, we can maximize the log-likelihood $L[\theta;\xi]$ that the stochastic process induced by the policy $\pi_\theta$ assigns to each demonstration trajectory $\xi$:
+\eq{
+L[\theta;\xi] = \log p_0(s_0) + \sum_{t=0}^{T-1} \log(\pi_\theta(a_t \given s_t)p(s_{t+1} \given s_t, a_t)).
+}
+When $\log\pi_\theta$ is parametrized by a deep neural network, we can perform stochastic gradient descent by sampling a batch of transitions, e.g. one complete trajectory, and computing the gradient
+\eq{
+\nabla_\theta L[\theta;\xi] = \sum_{t=0}^{T-1} \nabla_\theta \log \pi_\theta(a_t \given s_t).
+}
+Note that this method can be applied model-free, without any knowledge of the system dynamics $p$.
+This paper considers $\pi_\theta(a_t|s_t)$ to be an isotropic Gaussian distribution, with a computed mean $\mu_\theta(s_t)$ and a fixed variance $\sigma^2$ (a hyper-parameter that can be set by cross-validation), simplifying the gradient to the standard quadratic loss:
+\eqn{\label{eq:square}
+\nabla_\theta L[\theta;\xi] = -\sum_{t=0}^{T-1} \nabla_\theta \frac{(\mu_\theta(s_t)-a_t)^2}{2\sigma^2} = \sum_{t=0}^{T-1} \left(\frac{a_t - \mu_\theta(s_t)}{\sigma^2}\right)^\T \nabla_\theta \mu_\theta(s_t).
+}
+Admittedly, BC is the most straight-forward imitation algorithm in the reward-free setting but the other algorithms can be thought of as either changing the way that data is collected or the way the optimization is performed.
 
-\subsection*{Approximating the Q-Function}
-The particular MDP setting of interest is when one only assumes black-box access to $p$ and $R$, i.e., we can only sample them at specified states and actions. There is no local or global structure available to the algorithm \emph{a priori}. Without any structure the only way to truly compute an arbitrary Q-function is to exhaustively enumerate all possible action sequences $(a_i)^T$. This is at best exponential (in the discrete case) and at worst impossible (in the continuous case). This challenge forms a key motivation of a general class of algorithms called Reinforcement Learning~\cite{sutton1998reinforcement}, where statistical machine learning techniques are used to approximate optimal behavior while observing substantially less data that full enumeration. 
+Another approach to the imitation setting is Inverse Reinforcement Learning~\cite{abbeel2011inverse,ziebart2008maximum,ng2000algorithms}. This approach infers a reward function from the observed data (and possibly the system dynamics)--thus, reducing the problem to the original RL problem setting. \cite{abbeel2004apprenticeship} argue that the reward function is often a more concise representation of task than a policy. As such, a concise reward function is more likely to be robust to small perturbations in the task description. 
+The downside is that the reward function is not useful on its own, and ultimately a policy must be retrieved. In the most general case, an RL algorithm must be used to optimize for that reward function~\cite{abbeel2004apprenticeship}.
 
-In the popular Q-Learning approach~\cite{sutton1998reinforcement}, the algorithm enumerates random samples of action sequences containing $(x,u,r, x')$ tuples forming a trajectory. From these tuples, one can calculate the following value:
-\[
-y_i = R(s,a) + \arg \max_{a} Q(s',a)
-\]
-Each of the $y_i$ can be used to define a loss function since if $Q$ were the true Q function, then the following recurrence would hold:
-\[
-Q(s,a) = R(s,a) + \arg \max_{a} Q(s',a)
-\]
-So, Q-Learning defines a loss:
-\[
-L(Q) = \sum_{i} \|y_i - Q(s,a)\|_2^2
-\]
-This loss can be optimized with gradient descent. When the state and action space is discrete, the representation of the Q function is a table, and we get the familiar Q-Learning algorithm~\cite{sutton1998reinforcement}--where each gradient step updates the table with the appropriate value. When Q function needs to be approximated, then we get the Deep Q Network algorithm~\cite{mnih2015human}.
-
-
-
-
-
-
+\subsection{Reinforcement Learning with Demonstrations}
+However, imitation learning places a significant burden on the supervisor to exhaustively cover the scenarios the robot may encounter during execution~\cite{laskey2017iterative}.
+To address the limitations on either extreme of imitation and reinforcement, this dissertation proposes a hybrid of the exploration and demonstration learning paradigms. 
+In Deeply Aggravated~\cite{sun2017deeply},  the expert must provide a value function in addition to actions, which ultimately creates an algorithm similar to Reinforcement Learning.
+This basic setting is also similar to the problem setting consider in ~\cite{piot2014boosted}.
+\cite{subramanian2016exploration} consider a model where the random search policy of the algorithm is guided by expert demonstrations.
+Rather than manipulating the search strategy, \cite{brys2015reinforcement} modify the ``shape'' the reward function to match trajectories seen in demonstration.
+Few have consider how these ideas can extend to ``deep'' settings, where the states and action spaces are high-dimensional.
+This is an idea that has gotten recent traction in the robot learning community~\cite{duan2017one, james2017transferring, hester2017deep}. 
+I explore this problem in detail and study different learning methodologies to combine a small amount of expert data with exploration based algorithms. The choice of what to learn from the demonstrations is actually subtle and depends on the nature and quantity of the expert data.

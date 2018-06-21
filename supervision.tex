@@ -2,8 +2,7 @@
 It should now be clear that discovering a viable policy purely through exploration can be extremely difficult, especially if there are narrow criteria for task success.
 In long tasks, it can be very difficult to quantify the advantage of taking a particular action without a large number of repeated trials. This section describes the notion of expert information, or demonstrations, that can be leveraged to structure the search problem.
 
-All of the proposed techniques in the following sections assume access to a supervisor, who samples from an unknown policy $\pi: S \mapsto \Delta(A)$ that maps states to a probability distribution over actions. These samples form sequences of length $T$ called demonstrations. 
-The goal of these demonstrations is to provide an initial dataset from which we can learn about the structure of the MDP. As we will later see, these demonstrations are not necessarily provided by a human and can be derived from another algorithm.
+All of the proposed techniques in the following sections 
 
 \subsection*{Imitation Learning}
 The study of learning control policies from demonstrations is called imitation learning~\cite{osa2018algorithmic}. In the most basic form, a demonstration is defined as follows consisting of a sequence of state, action, reward tuples. 
@@ -30,26 +29,10 @@ A reward-free demonstration is a sequence of tuples of states and actions:
 \[\mathbf{d} = [(s_0,a_0,\_),(s_1,a_1,\_),...,(s_T,a_T,\_)]\]
 \end{definition}
 
-Such a setting is used in works such as DAgger~\cite{ross2011reduction}, Aggravate~\cite{sun2017deeply}, DART~\cite{laskey2017iterative}, and  several others in the robotics community~\cite{osa2018algorithmic}. In the most basic form, such a problem reduces to Maximum Likelihood Estimation. We model the system as discrete-time, having at time $t$ a state $s_t$ in some state space $\C S$, such that applying the control $a_t$ in control space $\C A$ induces a stochastic state transition $s_{t+1}\sim p(s_{t+1}|s_t,a_t)$. The initial state is distributed $s_0\sim p_0(s_0)$. We assume that the set of demonstrations consists of trajectories, each a sequence of states and controls $\xi = (s_0, a_0, s_1, \ldots, s_T)$ of a given length $T$.
 
-A flat, non-hierarchical policy $\pi_\theta(a_t \given s_t)$ defines the distribution over controls given the state, parametrized by $\theta\in\Theta$. In Behavior Cloning (BC), we train the parameter $\theta$ so that the policy fits the dataset of observed demonstrations and imitates the supervisor. For example, we can maximize the log-likelihood $L[\theta;\xi]$ that the stochastic process induced by the policy $\pi_\theta$ assigns to each demonstration trajectory $\xi$:
-\eq{
-L[\theta;\xi] = \log p_0(s_0) + \sum_{t=0}^{T-1} \log(\pi_\theta(a_t \given s_t)p(s_{t+1} \given s_t, a_t)).
-}
-When $\log\pi_\theta$ is parametrized by a deep neural network, we can perform stochastic gradient descent by sampling a batch of transitions, e.g. one complete trajectory, and computing the gradient
-\eq{
-\nabla_\theta L[\theta;\xi] = \sum_{t=0}^{T-1} \nabla_\theta \log \pi_\theta(a_t \given s_t).
-}
-Note that this method can be applied model-free, without any knowledge of the system dynamics $p$.
-This paper considers $\pi_\theta(a_t|s_t)$ to be an isotropic Gaussian distribution, with a computed mean $\mu_\theta(s_t)$ and a fixed variance $\sigma^2$ (a hyper-parameter that can be set by cross-validation), simplifying the gradient to the standard quadratic loss:
-\eqn{\label{eq:square}
-\nabla_\theta L[\theta;\xi] = -\sum_{t=0}^{T-1} \nabla_\theta \frac{(\mu_\theta(s_t)-a_t)^2}{2\sigma^2} = \sum_{t=0}^{T-1} \left(\frac{a_t - \mu_\theta(s_t)}{\sigma^2}\right)^\T \nabla_\theta \mu_\theta(s_t).
-}
-Admittedly, BC is the most straight-forward imitation algorithm in the reward-free setting but the other algorithms can be thought of as either changing the way that data is collected or the way the optimization is performed.
 
 \subsubsection{Inverse Reinforcement Learning}
-Another approach to the ``reward free'' setting is Inverse Reinforcement Learning~\cite{abbeel2011inverse,ziebart2008maximum,ng2000algorithms}. This approach infers a reward function from the observed data (and possibly the system dynamics)--thus, reducing the problem to the original RL problem setting. \cite{abbeel2004apprenticeship} argue that the reward function is often a more concise representation of task than a policy. As such, a concise reward function is more likely to be robust to small perturbations in the task description. 
-The downside is that the reward function is not useful on its own, and ultimately a policy must be retrieved. In the most general case, an RL algorithm must be used to optimize for that reward function~\cite{abbeel2004apprenticeship}.
+
 
 \subsubsection{Unsupervised Imitation Learning}
 While the state-action is typical of the imitation learning literature~\cite{osa2018algorithmic}, one may have a more limited access to a limited supervisor where only the states are observed. The actions that the supervisor applied are latent.
@@ -66,8 +49,7 @@ The either actions must be implicitly inferred from a inverse dynamics model or 
 Examples include the work on Time Constrastive Networks~\cite{sermanet2017time}, third-person imitation learning~\cite{stadie2017third}, and watch-and-patch~\cite{wu2018watch}.
 
 \subsection*{Between Imitation and Reinforcement}
-However, imitation learning places a significant burden on the supervisor to exhaustively cover the scenarios the robot may encounter during execution~\cite{laskey2017iterative}.
-To address the limitations on either extreme of imitation and reinforcement, this dissertation proposes a hybrid of the exploration and demonstration learning paradigms. This is an idea that has gotten recent traction in the robot learning community~\cite{duan2017one, james2017transferring}. I explore this problem in detail and study different learning methodologies to combine a small amount of expert data with exploration based algorithms. A common theme in all of the projects is to apply unsupervised learning techniques to a small number of initial expert demonstrations to structure future autonomous exploration. In different projects, we explore different structure learning tasks.
+
 
 
 

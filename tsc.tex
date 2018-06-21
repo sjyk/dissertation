@@ -1,26 +1,21 @@
-\section{Learning Sequential Structure From State Demonstrations}
-DDO is an inference algorithm that applies to the supervised demonstration setting where state-action tuples are available. Next, we explored algorithms for leveraging state-demonstrations for structuring RL exploration.
-Like DDO, we apply unsupervised learning to a small number of initial expert demonstrations to structure future autonomous exploration. Leveraging what we can learn from a small dataset of state-demonstrations, instead of decomposing a task into a hierarchy of controllers, we decompose it into a hierarchy of waypoints. First, I present our inference algorithm for learning waypoint structure from state demonstrations. Then, I describe how we incorporated these waypoints into a planner.
+\chapter{Task Segmentation From Demonstration}
+In the previous chapter, I considered a model where sequences of state-action tuples from an expert demonstrator were available.
+Next, we consider a setting where only the state sequence is observed.
+This can happen when the demonstration modality differs from the execution setting, e.g., learning from third person videos, motion capture of a human doing a task, or kinesthetic demonstrations. 
+Thus, the data cannot be directly used to derive a controller since the actions are not visible.
+So, we approach this problem with a simple premise;  \emph{change in reward function implies change in behavior}.
+Like DDO, we apply unsupervised learning to a small number of initial expert demonstrations to learn a latent reward structure. This requires two pieces: robustly detecting consistent changes in state trajectories and constructing reward functions around those change points.
 
-\subsection*{Introduction}
-While one could infer such criteria from manual annotations or matching to pre-defined dictionaries of motion templates, labeling consistency and supervisory burden are a concern in \emph{supervised} approaches.
-Complex, high-dimensional data can require a large amount of labels before a viable segmentation model can be learned.
-Similarly, dictionaries of primitives can be incomplete.
-To avoid these problems, \emph{unsupervised} segmentation methods have been long studied ~\cite{viviani1985segmentation,morasso1983three,sternad1999segmentation}.
-Recently, there are several new probabilistic approaches that pose segmentation as a probabilistic inference problem~\cite{barbivc2004segmenting, chiappa2010movement,  alvarez2010switched,kruger2012imitation, niekum2012learning, wachter2015hierarchical}.
-The approaches model a trajectory as generated from a mixture of parametrized dynamical regimes, and an inference procedure learns the dynamical parameters--which can be used to identify time segments at which each regime is active.
+As a motivating example from the problem setting consider the widespread adoption of robot-assisted minimally invasive surgery (RMIS), which is generating datasets of kinematic and video recordings of surgical procedures~\cite{gao2014jigsaws}.
+Explicitly modeling the system dynamics can require learning a large number of parameters.
+This makes a direct system identification approach somewhat sensitive to any noise in the dataset, especially when the datasets are small. 
+Furthermore, the states are often high-dimensional with combinations of kinematic and visual features.
 
-Explicitly modeling the dynamics can require learning a large number of parameters.
-This makes such approaches somewhat sensitive to any noise in the dataset, especially when the datasets are small. 
-This sensitivity leads to challenges in applications like robotic surgery.
-The adoption of robot-assisted minimally invasive surgery (RMIS)  generating datasets of kinematic and video recordings of surgical procedures~\cite{gao2014jigsaws}, and where trajectories are collected from teleoperation interfaces.
-With such interfaces, we have observed significant jitter in motion and noise due to time delays~\cite{chuck2017statistical, liangusing}.
-Figure \ref{teaser} plots 10 expert demonstrations of a surgical training task.
-In such a setting, the robustness and stability of the segmentation algorithm are a key concern in surgical segmentation, and to the best of our knowledge, prior work mitigates this issue by leveraging pre-defined dictionaries of motion segments~\cite{lin2006towards, lin2005automatic}.
-
-In many important tasks, while the demonstration motions may vary and be noisy, each demonstration contains roughly the same order of true segments, e.g., well-defined surgical training procedures.
+\subsection*{Intuition}
+Suppose, one could decompose a surgical task into a consistent sequence of sub-tasks.
+While each demonstration motion may vary and be noisy, each demonstration also contains roughly the same order of true segments.
 This consistent, repeated structure can be exploited to infer global segmentation criteria.
-By assuming known sequential segment-to-segment transitions, the problem reduces to identifying a common set of segment-to-segment transition events--not corresponding entire the trajectory segments across the whole dataset.
+By assuming known sequential segment-to-segment ordering, the problem reduces to identifying a common set of segment-to-segment transition events--not corresponding entire the trajectory segments across the whole dataset.
 This allows us to apply coarser, imperfect motion-based segmentation algorithms first that create a large set of candidate transitions.
 Then, we can filter this set by identifying transition events that occurred at similar times and states.
 Our experiments suggest that this approach has improved robustness and sample-efficiency, while approximating the behavior of more complicated dynamical systems-based approaches in many real problems.
@@ -46,7 +41,7 @@ plot the estimated segment transitions (state of the end point) for each of the 
 \tsc exploits this property to improve the robustness of motion-based segmentation.
 
 
-\subsection{Transition State Clustering Model}
+\section{Transition State Clustering Model}
 This section describes the problem setting, assumptions, and notation.
 Let $D=\{d_i\}$ be a set of demonstrations of a robotic task.
 Each demonstration of a task $d$ is a discrete-time sequence of $T$ state vectors in a feature-space $\mathcal{X}$.
@@ -83,7 +78,7 @@ Transition States are the set of state-time tuples where the indicator is 1:
 
 The goal of \tsc is to take the transition states $\Gamma$ and recover a segmentation function $\mathbf{S}$. This segmentation function is stronger than the provided $\mathbf{T}$ since it not only indicates that a transition has occurred but labels the segment transition consistently across demonstrations.
 
-\subsubsection{Assumptions}
+\subsection*{Assumptions}
 We assume that all possible true segments are represented in each demonstration by at least one transition (some might be false positives).
 Given the segmentation function $\mathcal{S}(d_i)$, one can define a set of \emph{true} transition states:
 \[\Gamma^* = \{
@@ -97,7 +92,7 @@ In other words, we assume that a subset of transition states discovered by the i
 There can be false positives but no false negatives (a demonstration where a segment transition is missed by the transition indicator function).
 Since the segmentation function is sequential and in a fixed order, this leads to a model where we are trying to find the $k-1$ true segment-segment transition points in $\Gamma$.
 
-\subsubsection{Problem Statement and Method Overview}\label{ps}
+\subsection*{Problem Statement and Method Overview}\label{ps}
 These definitions allow us to formalize the transition state clustering problem. 
 
 \begin{problem}[Transition State Clustering]
@@ -116,7 +111,7 @@ Given a set of regular demonstrations $D$ and transition identification function
 \noindent \textbf{Optimizations: } To avoid setting the number of clusters at each level of the hierarchy in advance, the number of regions are determined by a Dirichlet Process prior.
 A series of merging and pruning steps remove sparse clusters and repetitive loops.
 
-\subsubsection{Gaussian Mixture Transition Identification}
+\subsection*{Gaussian Mixture Transition Identification}
 While we can use any transition identification function to get $\Gamma$ (as long as it satisfies the assumptions), we present one implementation based of Gaussian Mixtures that we used in a number of our experiments.
 We found that this GMM approach was scalable (in terms of data and dimensionality) and had fewer hyper-parameters to tune than more complex models.
 Combined with the subsequent hierarchical clustering, this approach proved to be robust in all of our experiments.
@@ -166,14 +161,14 @@ The top $p'$ eigenvalues define a new embedded feature vector for each $\omega$ 
 We can now apply the algorithm above in this embedded feature space.
 
 
-\subsection{Inference Algorithm}
+\subsection*{TSC Inference Algorithm}
 We present the clustering algorithm which is summarized in Algorithm \ref{algotext}.
 In a first pass, the transition states are clustered with respect to the kinematic states, then sub-clustered with respect to the sensory states, and then, we temporally sub-cluster.
 The sub-clusters can be used to formulate the segmentation criteria.
 
 \begin{algorithm}[t]
 \caption{Transition State Clustering \label{algotext}}
-\begin{algorithmic}[1]
+\begin{algorithmic}
 \State \textsf{Input: } $\Gamma$ Transition States, $\rho$ pruning parameter
 
 \State Fit a mixture model to the set of transition states $\Gamma$ in the kinematic states.
@@ -226,7 +221,7 @@ Each cluster is formed using a GMM triplet in the kinematic state, visual state,
 The quantiles of the three GMMs will define an ordered sequence of regions $[\rho_1,...,\rho_k]$ over the state-space and each of these regions has an associated time interval defined by the Gaussian confidence interval for some confidence level $z_{\alpha}$.
 
 
-\subsection{Simulated Experimental Evaluation}
+\subsection{TSC Simulated Experimental Evaluation}
  We evaluate \tsc's robustness in the following way:
 \begin{enumerate}
    \item \emph{Precision. } Results suggest \tsc significantly reduces the number of false positive segments in simulated examples with noise.
@@ -245,11 +240,11 @@ Comparison of 7 alternative segmentation criteria:
     \item \emph{Gaussian Mixture Model (GMM): } This algorithm applies a GMM model to the observed states and detects changes in most likely assignment. The number of clusters were set to 2.
     \item \emph{Windowed Gaussian Mixture Model (GMMW): } This algorithm is the first phase of \tsc. It applies a GMM to windows of size 2, and detects changes in most likely assignment. The number of clusters was set to 2, unlike in \tsc where we use the DP to set the number of clusters.
     \item \emph{Auto-Regressive Mixture (AR): } This model fits a piecewise linear transition law to the observed data.
-    \item  \emph{Coresets (CORE): } We evaluate against a standard coreset model~\citep{sung2012trajectory, volkov2015coresets}, and the particular variant is implemented with weighted k-means. We applied this to the same augmented state-vector as in the previously mentioned GMM.
-    \item \emph{\tscfull (\tsc): } Our proposed approach with a pruning threshold of $0.8$ and no loop compaction.
+    \item  \emph{Coresets (CORE): } We evaluate against a standard coreset model~\cite{sung2012trajectory, volkov2015coresets}, and the particular variant is implemented with weighted k-means. We applied this to the same augmented state-vector as in the previously mentioned GMM.
+    \item \emph{\tsc: } Our proposed approach with a pruning threshold of $0.8$ and no loop compaction.
 \end{enumerate}
 
-\begin{figure}%[t]
+\begin{figure}[ht!]%[t]
 \centering
 \includegraphics[width=0.48\columnwidth]{tsc-experiments/a.png}
 \includegraphics[width=0.48\columnwidth]{tsc-experiments/b.png}
@@ -259,7 +254,7 @@ Comparison of 7 alternative segmentation criteria:
 % \vspace{-1em}
 \end{figure}
 
-\begin{figure}%[t]
+\begin{figure}[ht!]
 \centering
 \includegraphics[width=\columnwidth]{tsc-experiments/ball-results.png}
 \caption{Plots the identified transitions with each segmentation algorithm with and without noise. While all techniques are precise when there is no noise, \tsc is the most robust in the presence of noise. \label{ball-results}}
@@ -304,7 +299,7 @@ It is important to note that we do not claim that one segmentation algorithm is 
 These results only suggest that \tsc is more precise than alternatives; that is, given the assumptions in \tsc it consistently recovers segments according to those assumptions.
 The next experiments will study the recall characteristics.
 
-\begin{figure}%[t]
+\begin{figure}[ht!]%[t]
 \centering
 \includegraphics[width=\columnwidth]{tsc-experiments/ball-results2.png}
 \caption{Plots the identified transitions with each segmentation algorithm with and without noise. In this example, temporal variation is added by incorporating a random ``air resistance'' factor.
@@ -329,7 +324,7 @@ y = x + N(0,10)
 \]
 We find that \tsc recovers a consistent set of segments even with the temporal variation.
 
-\begin{figure}%[t]
+\begin{figure}[ht!]%[t]
 \centering
 \includegraphics[width=0.48\columnwidth]{tsc-experiments/a1.png}
 \includegraphics[width=0.48\columnwidth]{tsc-experiments/b1.png}
@@ -337,7 +332,7 @@ We find that \tsc recovers a consistent set of segments even with the temporal v
 % \vspace{-1em}
 \end{figure}
 
-\begin{figure}%[t]
+\begin{figure}[ht!]%[t]
 \centering
 \includegraphics[width=\columnwidth]{tsc-experiments/hybrid_approach.png}
 \caption{Plots the identified transitions with each segmentation algorithm with and without noise. Velocity based segmentation finds one transition point where there is a change in direction. A windowed GMM where the number of clusters is set by a DP finds three transition points. \tsc can improve the precision of both techniques.  \label{f8-results}}
@@ -371,7 +366,7 @@ The 2D square rotates clockwise in $\frac{\pi}{10}$ radian/s for
 The state of the system is the $(x,y)$ position of the corner.
 We add .1 meter standard deviation Gaussian observation noise to the observed trajectories.
 
-\begin{figure}%[t]
+\begin{figure}[ht!]%[t]
 \centering
 \includegraphics[width=\columnwidth]{tsc-experiments/block-results2.png}
 \caption{Plots the identified transitions with each segmentation algorithm with and without noise. While all techniques are precise when there is no noise, \tsc is the most robust in the presence of noise but finds additional segments. \label{block-results}}
@@ -393,19 +388,19 @@ In this sense, the definition of the state-space changes the segments found.
 We hope to explore these issues in more detail in future work.
 
 
-\begin{figure*}%[t]
+\begin{figure}[ht!]%[t]
 \centering
 \includegraphics[width=\textwidth]{tsc-experiments/tsc_segmentation_benchmark.png}
 \caption{One of 20 instances with random goal points $G1$, $G2$, $G3$. (a) Observations from a simulated demonstration with three regimes, (b) Observations corrupted with Gaussian white sensor noise, (c) Observations corrupted with low frequency process noise, and (d) Observations corrupted with an inserted loop. See Figure~\ref{exp3} for evaluation on loops. \label{simulated}}
 % \vspace{-1em}
-\end{figure*}
+\end{figure}
 
-\begin{figure*}%[t]
+\begin{figure}[ht!]%[t]
 \centering
 \includegraphics[width=\textwidth]{tsc-experiments/noise_illustration.png}
 \caption{(a) Nominal trajectory, (b) 1 std. of high frequency observation noise, (c) 2 std. of high frequency observation noise,  (d) 1 std. of low frequency process noise, and (e) 2 std. of low frequency process noise. \label{simulated-noise}}
 % \vspace{-1em}
-\end{figure*}
+\end{figure}
 
 \subsubsection{Recall in Synthetic Examples}
 Comparing different segmentation models can be challenging due to differing segmentation criteria. However, we identified some algorithms that identify locally linear or near linear segments.
@@ -434,23 +429,10 @@ The experimental code is available at: \url{http://berkeleyautomation.github.io/
 \vspace{0.5em}
 \noindent\textbf{5 Algorithms: } We compare \tsc against alternatives where the authors explicitly find (or approximately find) locally linear segments. It is important to reiterate that different segmentation techniques optimize different objectives, and this benchmark is meant to characterize the performance on a common task. All of the techniques are based on Gaussian Distributions or Linear auto-regressive models.
 
-\begin{figure*}
-\centering
-\includegraphics[width=0.33\textwidth]{tsc-experiments/exp1.png}
-\includegraphics[width=0.33\textwidth]{tsc-experiments/exp2.png}
-\includegraphics[width=0.33\textwidth]{tsc-experiments/exp5.png}
-%\includegraphics[width=0.24\textwidth]{tsc-experiments/bw_runtime.png}
-\includegraphics[width=0.8\textwidth]{tsc-experiments/big-legend.png}
-\caption{Each data point represents 20 random instances of a 3-segment problem with varying levels of high-frequency noise, low-frequency noise, and demonstrations. We measure the segmentation accuracy for the compared approaches. (A) \tsc finds a more a accurate segmentation than all of the alternatives even under significant high-frequency observation noise, (B) \tsc is more robust to low-frequency process noise than the alternatives, 
-% (C) \todo {\tsc performance on data with noisy loops.}
-(C) the Bayesian techniques solved with MCMC (ARHMM, HSMM) are more sensitive to the number of demonstrations provided than the others.
-%(D) \tsc runs over a 100x faster than the nearest alternative in terms of accuracy (ARHMM).  
-\label{exp1}}
-\end{figure*}
 
 \begin{enumerate}
     \item \emph{(GMM)} (Same as previous experiment). In this experiment, we set the parameter to the optimal choice of $3$ without automatic tuning.
-    \item \emph{(GMM+HMM)} A natural extension to this model is to enforce a transition structure on the regimes with a latent Markov Chain~\citep{asfour2006imitation,calinon2004stochastic,kruger2010learning, vakanski2012trajectory}. 
+    \item \emph{(GMM+HMM)} A natural extension to this model is to enforce a transition structure on the regimes with a latent Markov Chain~\cite{asfour2006imitation,calinon2004stochastic,kruger2010learning, vakanski2012trajectory}. 
     We use the same state vector as above, without time augmentation as this is handled by the HMM. We fit the model using the forward-backward algorithm.
     \item \emph{Coresets} (Same as previous experiment).
     \item \emph{HSMM} We evaluated a Gaussian Hidden Semi-Markov Model as used in \cite{tanwani2016learning}. We directly applied this model to the demonstrations with no augmentation or normalization of features. This was implemented with the package \textsf{pyhsmm}. We directly applied this model to the demonstrations with no augmentation as in the GMM approaches. We ran our MCMC sampler for 10000 iterations, discarding the first 2500 as burn-in and thinning the chain by 15. 
@@ -470,12 +452,6 @@ After establishing the correspondence between predictions and ground truth, we c
 
 %\subsubsection{Overview}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.8\columnwidth]{tsc-experiments/bw_runtime.png}
-\caption{\tsc is about 6x slower than using Coresets or the direct GMM approach, but it is over 100x faster than the MCMC for the ARHMM model.\label{runtime}}
-\end{figure}
-
 \subsubsection{Accuracy v.s. Noise}
 In our first experiment, we measured the segment accuracy for each of the algorithms for 50 demonstrations.
 We also varied the amount of process and observation noise in the system.
@@ -492,6 +468,27 @@ While parameter inference on these models can be solved more efficiently (but ap
 \tsc is about 6x slower than using Coresets or the direct GMM approach, but it is over 100x faster than the MCMC for the ARHMM model.
 Figure \ref{runtime} compares the runtime of each of the algorithms as a function of the number of demonstrations.
 
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.32\textwidth]{tsc-experiments/exp1.png}
+\includegraphics[width=0.32\textwidth]{tsc-experiments/exp2.png}
+\includegraphics[width=0.32\textwidth]{tsc-experiments/exp5.png}
+%\includegraphics[width=0.24\textwidth]{tsc-experiments/bw_runtime.png}
+\includegraphics[width=0.8\textwidth]{tsc-experiments/big-legend.png}
+\caption{Each data point represents 20 random instances of a 3-segment problem with varying levels of high-frequency noise, low-frequency noise, and demonstrations. We measure the segmentation accuracy for the compared approaches. (A) \tsc finds a more a accurate segmentation than all of the alternatives even under significant high-frequency observation noise, (B) \tsc is more robust to low-frequency process noise than the alternatives, 
+% (C) \todo {\tsc performance on data with noisy loops.}
+(C) the Bayesian techniques solved with MCMC (ARHMM, HSMM) are more sensitive to the number of demonstrations provided than the others.
+%(D) \tsc runs over a 100x faster than the nearest alternative in terms of accuracy (ARHMM).  
+\label{exp1}}
+\end{figure}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.8\columnwidth]{tsc-experiments/bw_runtime.png}
+\caption{\tsc is about 6x slower than using Coresets or the direct GMM approach, but it is over 100x faster than the MCMC for the ARHMM model.\label{runtime}}
+\end{figure}
+
+
 \textbf{\tsc Hyper-Parameters: }
 Next, we explored the dependence of the performance on the hyper-parameters for \tsc.
 We focus on the window size and the pruning parameter.
@@ -502,7 +499,7 @@ Similarly, Figure \ref{exp3}b shows how increasing the pruning parameter affects
 However, a larger pruning parameter is less efficient at low noise levels. 
 Based on these curves, we selected $(w=3, \rho=0.3)$ in our synthetic experiments.
 
-\begin{figure}
+\begin{figure}[ht!]
 \centering
 \includegraphics[width=0.48\columnwidth]{tsc-experiments/exp3.png}
 \includegraphics[width=0.48\columnwidth]{tsc-experiments/exp4.png}
@@ -516,20 +513,14 @@ An HMM grammar over segments is clearly more expressive than \tsc's, and we expl
 We compare the accuracy of the different segmentation techniques in detecting that a loop is present (Figure \ref{exp4}).
 Figure \ref{exp4}a shows that \tsc is competitive with the HMM approaches as we vary the observation noise; however, the results suggest that ARHMM provides the most accurate loop detection.
 On the other hand, Figure \ref{exp4}b suggests that process noise has a very different effect.
-\begin{figure}[ht]
+
+\begin{figure}[ht!]
 \centering
 \includegraphics[width=0.48\columnwidth]{tsc-experiments/exp6.png}
 \includegraphics[width=0.48\columnwidth]{tsc-experiments/exp7.png}
 \caption{(A) illustrates the accuracy of \tsc's compaction step as a function of observation noise. \tsc is competitive with the HMM-based approaches without having to model the full transition matrix. (B) \tsc is actually more robust to low-frequency process noise in the loops than the HMM-based approaches. \label{exp4}}
 \end{figure}
 \tsc is actually more accurate than the HMM approaches when the process noise is high--even without learning a transition structure.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.48\columnwidth]{tsc-experiments/exp11.png}
-\includegraphics[width=0.48\columnwidth]{tsc-experiments/exp12.png}
-\caption{We investigate how the accuracy of \tsc scales with the dimensionality of the state-space. In (A) we consider the problem with no loops or compaction, and in  (B) we measure the accuracy of the compaction step as a function of dimensionality. \label{exps}}
-\end{figure}
 
 \textbf{Scaling with Dimensionality: }
 We investigate how the accuracy of \tsc scales with the dimensionality of the state-space.
@@ -546,13 +537,13 @@ This is possibly due to the use of the $L_2$ distance metric to compare partial 
 \tsc runs in $4$ seconds on the 2-D case, $16$ seconds on the 10-D case, and in $59$ seconds on the 35-D case. 
 
 
-
-\begin{figure*}[t]
+\begin{figure}[ht!]
 \centering
-\includegraphics[width=0.7\textwidth]{tsc-experiments/conceptual_plots}
- \caption{Hand annotations of the three tasks: (a) circle cutting, (b) needle passing, and (c) suturing. Right arm actions are listed in dark blue and left arm actions are listed in yellow. \label{demo}}
-%  \vspace{-2em}
-\end{figure*}
+\includegraphics[width=0.48\columnwidth]{tsc-experiments/exp11.png}
+\includegraphics[width=0.48\columnwidth]{tsc-experiments/exp12.png}
+\caption{We investigate how the accuracy of \tsc scales with the dimensionality of the state-space. In (A) we consider the problem with no loops or compaction, and in  (B) we measure the accuracy of the compaction step as a function of dimensionality. \label{exps}}
+\end{figure}
+
 
 \subsection{Surgical Data Experiments}
 We describe the three tasks used in our evaluation and the corresponding manual segmentation (Figure \ref{demo}).
@@ -561,6 +552,14 @@ This set of experiments primarily evaluates the utility of segments learned by \
 Data was collected before hand as a part of prior work.
 Our hypothesis is that even though \tsc is unsupervised, it identifies segments that often align with manual annotations.
 In all of our experiments, the pruning parameter $\rho$ is set to $80\%$ and the compaction heuristic $\delta$ is to 1cm.
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.7\textwidth]{tsc-experiments/conceptual_plots}
+ \caption{Hand annotations of the three tasks: (a) circle cutting, (b) needle passing, and (c) suturing. Right arm actions are listed in dark blue and left arm actions are listed in yellow. \label{demo}}
+%  \vspace{-2em}
+\end{figure}
+
 
 The state-space is the 6D end-effector position.
 In some experiments, we augment this state-space with the following visual features:
@@ -596,89 +595,7 @@ The robot passes a needle through a hoop using its right arm, then its left arm 
 
 \noindent\textbf{Suturing: }Next, we explored 39 examples of a 4 throw suturing task (Figure \ref{demo}c). Using the right arm, the first step is to penetrate one of the points on right side. The next step is to force the needle through the phantom to the other side. Using the left arm, the robot pulls the needle out of the phantom and then the robot hands it off to the right arm for the next point. 
 
-% \begin{figure}[10][!h]
-%     \centering
-%     % \vspace{-15pt}
-%     \caption{Hand annotations of the three tasks: (a) circle cutting, (b) needle passing, and (c) suturing. Right arm actions are listed in dark blue and left arm actions are listed in yellow.}                
-%     \includegraphics[width=0.6\textwidth]{tsc-experiments/conceptual_plots}
-%      \label{demo}
-%     \vspace{-1.5em}
-% \end{figure}
 
-\begin{figure*}[t]
-\centering
-    \includegraphics[width=0.8\textwidth]{tsc-experiments/new_needle_passing2.eps}
-    \vspace{-0.7em}
-    \caption{(a) The transition states for the task are marked in orange (left arm) and blue (right arm). (b-c) The \tsc clusters, which are clusters of the transition states, are illustrated with their 75\% confidence ellipsoid for both arms}
-    \label{exp:np}
-    \vspace{-0.5em}
-\end{figure*}
-
-\begin{figure*}[t]
-\centering
-    \includegraphics[width=0.8\textwidth]{tsc-experiments/new_suturing2.eps}
-    \vspace{-0.7em}
-    \caption{ (a) The transition states for the task are marked in orange (left arm) and blue (right arm). (b-c) The clusters, which are clusters of the transition states, are illustrated with their 75\% confidence ellipsoid for both arms}
-    \label{exp:su}
-    % \vspace{-0.5em}
-\end{figure*}
-
-\iffalse
-\subsection{Visual Features}\label{cvh}
-\tsc is compatible with visual features in addition to kinematic states.
-Our goal with these features was to illustrate that \tsc applies to general state-spaces as well as spatial ones, and not to address the general perception problem.
-These features were constructed via manual annotation, where the Grasp and Needle Penetration were identified by reviewing the videos and marking the frames at which they occurred.
-
-We evaluate \tsc in this featurized state space that incorporates states derived from vision.
-We illustrate the transition states in Figure~\ref{exp:cop} with and without visual features on the circle cutting task.
- At each point where the model transitions, we mark the end-effector $(x,y,z)$ location (ignoring the orientation).
- In particular, we show a region (red box) to highlight the benefits of these features.
-During the cross-over phase of the task, the robot has to re-enter the notch point and adjust to cut the other half of the circle.
-When only using the end-effector kinematic pose, the locations where this transition happens is unreliable as operators may approach the entry from slightly different angles.
-On the other hand, the use of a gripper contact binary feature clusters the transition states around the point at which the gripper is in position and ready to begin cutting again.
-In the subsequent experiments, we use the same two visual features.
-
-\begin{figure}[t]
-\centering
-  \includegraphics[width=\columnwidth]{tsc-experiments/exp1_e_state.eps}
-%   \includegraphics[width=1.4\textwidth]{tsc-experiments/exp1_e_state.eps}
- \caption{(a) We show the transition states without visual features, (b) and with visual features. Marked in the red box is a set of transitions that cannot always be detected from kinematics alone. 
- \label{exp:cop}}
-\end{figure}
-\fi
-
-
-\subsubsection{Pruning and Compaction} \label{sec:pruningCompaction}
-In Figure \ref{exp:removal}, we highlight the benefit of pruning and compaction using the Suturing task as exemplar.
-First, we show the transition states without applying the compaction step to remove looping transition states (Figure \ref{exp:removal}a).
-We find that there are many more transition states at the ``insert" step of the task.
-Compaction removes the segments that correspond to a loop of the insertions.
-Next, we show all of the clusters found by the first step of segmentation.
-The centroids of these clusters are marked in Figure \ref{exp:removal}b.
-Many of these clusters are small containing only a few transition states. 
-This is why we created the heuristic to prune clusters that do not have transition states from at least 80\% of the demonstrations.
-In all, 11 clusters are pruned by this rule.
-
-% \begin{figure}[t]
-%     \centering
-%     \includegraphics[width=0.35\textwidth]{tsc-experiments/suturing_milestones_no_compaction}
-%     \includegraphics[width=0.35\textwidth]{tsc-experiments/suturing_milestones_no_pruning}
-%     \caption{We illustrate the benefits of pruning small clusters and our retry compaction algorithm. We first show the transition states without compaction, and then show the clusters without pruning.}
-%      \label{exp:removal}
-% \end{figure}
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=0.45\columnwidth]{tsc-experiments/suturing_milestones_no_compaction}
-    \includegraphics[width=0.45\columnwidth]{tsc-experiments/suturing_milestones_no_pruning}
-    \caption{We first show the transition states without compaction (in black and green), and then show the clusters without pruning (in red). Compaction sparsifies the transition states and pruning significantly reduces the number of clusters.}
-    \label{exp:removal}
-\end{figure}
-
-\begin{figure}[t]
-    \includegraphics[width=\columnwidth]{tsc-experiments/new_circle_cutting}
-    \caption{(a) The transition states for the circle cutting task are marked in black. (b) The \tsc clusters, which are clusters of the transition states, are illustrated with their 75\% confidence ellipsoid.\label{exp:circ}}
-\end{figure}
 
 \subsubsection{Results}\label{results:real}
 
@@ -695,6 +612,10 @@ This illustrates why supervised segmentation is challenging.
 Human annotators segment trajectories on boundaries that are hard to characterize mathematically, e.g., is frame 34 or frame 37 the segment boundary.
 Supervisors may miss crucial motions that are useful for automation or learning.
 
+\begin{figure}[ht!]
+    \includegraphics[width=\columnwidth]{tsc-experiments/new_circle_cutting}
+    \caption{(a) The transition states for the circle cutting task are marked in black. (b) The \tsc clusters, which are clusters of the transition states, are illustrated with their 75\% confidence ellipsoid.\label{exp:circ}}
+\end{figure}
 
 
 
@@ -709,6 +630,16 @@ Next, Figures\,\ref{exp:np}b-c illustrate the \tsc clusters.
 We find that again \tsc learns a small parametrization for the task structure with the clusters corresponding well to the manual segments.
 However, in this case, the noise does lead to a spurious cluster (4 marked in green).
 One possible explanation is that the demonstrations contain many adjustments to avoid colliding with the needle hoop and the other arm while passing the needle through leading to numerous transition states in that location.
+
+\begin{figure}[ht!]
+\centering
+    \includegraphics[width=0.8\textwidth]{tsc-experiments/new_needle_passing2.eps}
+    \vspace{-0.7em}
+    \caption{(a) The transition states for the task are marked in orange (left arm) and blue (right arm). (b-c) The \tsc clusters, which are clusters of the transition states, are illustrated with their 75\% confidence ellipsoid for both arms}
+    \label{exp:np}
+    \vspace{-0.5em}
+\end{figure}
+
 
 %Our technique is not limited to x,y,z states for the robot and works with more general configurations. In Figure \ref{exp:np}b, at each of the first 5 clusters, we plot the learned mean pose. 
 %This shows that the robot has to orient its end-effector horizontal to the loop during the pass through and pull and vertical during the handoff.
@@ -725,6 +656,15 @@ In fact, the DP-GMM method gives us $23$ clusters, $11$ of which represent less 
 In the early stages of the task, the clusters clearly correspond to the manually segmented transitions.
 As the task progresses, we see that some of the later clusters do not.
 
+
+\begin{figure}[ht!t]
+\centering
+    \includegraphics[width=0.8\textwidth]{tsc-experiments/new_suturing2.eps}
+    \vspace{-0.7em}
+    \caption{ (a) The transition states for the task are marked in orange (left arm) and blue (right arm). (b-c) The clusters, which are clusters of the transition states, are illustrated with their 75\% confidence ellipsoid for both arms}
+    \label{exp:su}
+    % \vspace{-0.5em}
+\end{figure}
 
 
 \begin{table*}
@@ -772,61 +712,264 @@ We explore two metrics: \textbf{seg-surgeme} the fraction of \tsc clusters with 
  
  
  
+\subsubsection{Pruning and Compaction} \label{sec:pruningCompaction}
+In Figure \ref{exp:removal}, we highlight the benefit of pruning and compaction using the Suturing task as exemplar.
+First, we show the transition states without applying the compaction step to remove looping transition states (Figure \ref{exp:removal}a).
+We find that there are many more transition states at the ``insert" step of the task.
+Compaction removes the segments that correspond to a loop of the insertions.
+Next, we show all of the clusters found by the first step of segmentation.
+The centroids of these clusters are marked in Figure \ref{exp:removal}b.
+In all, 11 clusters are pruned by this rule.
+
+% \begin{figure}[ht!t]
+%     \centering
+%     \includegraphics[width=0.35\textwidth]{tsc-experiments/suturing_milestones_no_compaction}
+%     \includegraphics[width=0.35\textwidth]{tsc-experiments/suturing_milestones_no_pruning}
+%     \caption{We illustrate the benefits of pruning small clusters and our retry compaction algorithm. We first show the transition states without compaction, and then show the clusters without pruning.}
+%      \label{exp:removal}
+% \end{figure}
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.35\columnwidth]{tsc-experiments/suturing_milestones_no_compaction}
+    \includegraphics[width=0.35\columnwidth]{tsc-experiments/suturing_milestones_no_pruning}
+    \caption{We first show the transition states without compaction (in black and green), and then show the clusters without pruning (in red). Compaction sparsifies the transition states and pruning significantly reduces the number of clusters.}
+    \label{exp:removal}
+\end{figure}
  
+\subsection*{TSC with Deep Features}
+Inspired by the recent success of deep neural networks in reinforcement learning~\cite{levine2015end, lenz2015deep}, we then explored how visual features extracted from Convolutional Neural Networks can be used for transition state identification.
+
+We use layers from a pre-trained Convolutional Neural Network (CNNs) to derive the features frame-by-frame. In particular, we explore two architectures designed for image classification task on natural images: (a) \textbf{AlexNet: } Krizhevsky et al. proposed multilayer (5 in all) a CNN architecture \cite{krizhevsky2012imagenet}, and (b)~\textbf{VGG: } Simoyan et al. proposed an alternative architecture termed VGG (acronym for Visual Geometry Group) which increased the number of convolutional layers significantly (16 in all)~\cite{simonyan2014very}. In our experiments, we explore the level of generality of features required for segmentation. We also compare these features to other visual featurization techniques such as SIFT for the purpose of task segmentation using \tsc. 
 
 
+\subsubsection{Evaluation of Visual Featurization}
+In our first experiment, we explore different visual featurization, encoding, and dimensionality reduction techniques.
+We applied \tsc to our suturing experimental dataset and measured the silhouette score of the resulting transition state clusters.
+Table \ref{tab:visual} describes the featurization techniques on the vertical axis and dimensionality reduction techniques on the horizontal axis.
+On this dataset, our results suggest that features extracted from the pre-trained CNNs resulted in tighter transition state clusters compared to SIFT features with a 3\% lower \textsf{ss} than the worst CNN result.
+Next, we found that features extracted with the VGG architecture resulted in the highest \textsf{ss} with a 3\% higher \textsf{ss} than the best AlexNet result.
+We also found that PCA for dimensionality reduction achieved a \textsf{ss} performance of 7\% higher than the best GRP result and 10\% higher than best CCA result.
+Because CCA finds projections of high correlation between the kinematics and video, we believe that CCA discards informative features resulting in reduced clustering performance. 
+We note that neither of the encoding schemes, VLAD or LCD\del{LCD$_{VLAD}$} significantly improves the \textsf{ss}.
+
+There are two hyper-parameters for \tsc which we set empirically: sliding window size (T = 3), and the number of PCA dimensions (k = 100).
+In Figure \ref{fig:sensitvity}, we show a sensitivity plot with the \textsf{ss} as a function of the parameter.
+We calculated the \textsf{ss} using the same subset of the suturing dataset as above and with the VGG conv5\_3 CNN.
+We found that T = 3 gave the best performance.
+We also found that PCA with k = 1000 dimensions was only marginally better than k = 100 yet required $>$30 mins to run.
+For computational reasons, we selected k = 100.
 
 
-
-
-\iffalse
-\subsection{Experiment 1. Synthetic Example of 2-Segment Trajectory}\label{toy}
-\todo{SK: Will remove this set of experiments for new benchmark}
-In our first experiment, we segment noisy observations from a two regime linear dynamical system. 
-Figure \ref{generated-data} illustrates examples from this system under the different types of corruption.
-Since there is a known a ground truth of two segments, we measure the precision (average fraction of observations in each segment that are from the same regime) and recall (average fraction of observations from each regime segmented together) in recovering these two segments.
-We can jointly consider precision and recall with the \emph{F1 Score} which is the harmonic mean of the two.
-We compare three techniques against \tsc: K-Means (only spatial), GMM+T (using time as a feature in a GMM), GMM+HMM (using an HMM to model the grammar).
-For the GMM techniques, we have to select the number of segments, and we experiment with $k=1,2,3$ (i.e., a slightly sub-optimal parameter choice compared to $k=2$).
-In this example, for \tsc, we set the two user-specified parameters to $\delta=0$ (merge all repeated transitions), and $\rho=80\%$ (prune all regimes representing less than $80\%$ of the demonstrations).
-
-First, we generate 100 noisy observations (additive zero mean Gaussian noise) from the system without loops or spurious states--effectively only measuring the DP-GMM versus the alternatives.
-Figure \ref{generated-comp}a shows the F1-score as a function of the noise in the observations.
-Initially, for an appropriate parameter choice $k=2$ both of the GMM-based methods perform well and at low noise levels the DP-GMM used by our work mirrors this performance.
-However, if the parameter is set to be $k=3$, we see that the performance significantly degrades.
-$k=1$ corresponds to a single segment which has a F1 score of 0.4 on all figures.
-The DP-GMM mitigates this sensitivity to the choice of parameter by automatically setting the value.
-Furthermore, as the noise increases, the $80\%$ pruning of DP-GMM mitigates the effect of outliers leading to improved accuracy. 
-
-In Figure \ref{generated-comp}b, we look at the accuracy of each technique as a function of the number of demonstrations.
-GMM+HMM has more parameters to learn and therefore requires more data.
-GMM+T converges the fastest, \tsc requires slightly more data, and the GMM+HMM requires the most.
-In Figure \ref{generated-comp}c, we corrupt the observations with spurious dynamical regimes. These are random transition matrices which replace one of the two dynamical regimes.
-We vary the rate at which we randomly corrupt the data, and measure the performance of the different segmentation techniques as a function of this rate.
-Due to the pruning, \tsc gives the most accurate segmentation. 
-The Dirichlet process groups the random transitions in different clusters and the small clusters are pruned out.
-On the other hand, the pure GMM techniques are less accurate since they are looking for exactly two regimes.
-
-In Figure \ref{generated-comp}d, introduce corruption due to loops and compare the different techniques.
-A loop is a step that returns to the start of the regime randomly, and we vary this random rate.
-For an accurately chosen parameter $k=2$, for the GMM-HMM, it gives the most accurate segmentation.
-However, when this parameter is set poorly $k=3$, the accuracy is significantly reduced.
-On the other hand, using time as a GMM feature (GMM+T) does not work since it does not know how to group loops into the same regime.
-\fi
-
-\iffalse
-\begin{figure*}%[t]
+\begin{figure}[ht!]
+% \vspace{-10pt}
 \centering
-\includegraphics[width=\textwidth]{tsc-experiments/generated_data.pdf}
-\caption{(a) Observations from a dynamical system with two regimes, (b) Observations corrupted with Gaussian Noise, (c) Observations corrupted with a spurious inserted regime (red), and (d) Observations corrupted with an inserted loop(green). \label{generated-data}}
-% \vspace{-1em}
-\end{figure*}
+    \includegraphics[width=0.95\linewidth]{tsc-experiments/sensitivity}
+    \caption{We evaluate the sensitivity of two hyperparameters set in advance: number of PCA dimensions and sliding window size. The selected value is shown in red double circles.\label{fig:sensitvity}}
+% \vspace{-10pt}
+\end{figure}
 
-\begin{figure*}%[t]
+
+\subsubsection{t-SNE visualization of visual features}
+One of the main insights of this study is that features from pre-trained CNNs exhibit locally-linear behavior which allows application of a switching linear dynamical system model. 
+% One of the main insights of this paper is that, surprisingly, trajectories of convolutional features sometimes exhibit the necessary local-linearity needed to apply Transition State Clustering.
+We experimentally tested this by applying dimensionality reduction to trajectories of features from different video featurization techniques.
+Figure \ref{fig:tsne} shows t-SNE embeddings of visual features extracted for a single demonstration of suturing. The deep features display clear locally-linear properties and can be more easily clustered than SIFT features extracted for the corresponding frames. 
+We speculate that SIFT breaks up trajectory structure due to its natural scale and location invariance properties.
+We also compared to using the raw RGB image pixel values and discovered that the deep features result in more well-formed locally linear trajectories.
+However, it is important to note that unlike spatial trajectories there are discrete jumps in the convolutional trajectories.
+We hope to explore this problem in more detail in future work.
+
+\begin{figure}[!ht]
 \centering
-\includegraphics[width=\textwidth]{tsc-experiments/generated_comp.pdf}
-\includegraphics[width=0.6\textwidth]{tsc-experiments/toy_legend.pdf}
-\caption{Accuracy as a function of noise: \tsc, K-Means, GMM+T (GMM with time), GMM+HMM (GMM with HMM). (a) The Dirichlet Process used in \tsc reduces sensitivity to parameter choice and is comparable to GMM techniques using the optimal parameter choice, (b) HMM based methods need more training data as they have to learn transitions, (c) \tsc clusters are robust to spurious regimes, and (d) \tsc clusters are robust to loops--without having to know the regimes in advance. \label{generated-comp}}
-% 
-\end{figure*}
-\fi
+    \includegraphics[width=0.45\linewidth]{tsc-experiments/t-SNE_suturing_v3}
+    \caption{Each data point in the figure corresponds to a t-SNE visualization of features of a single frame in the video. (a) RGB pixel values of original image (b) shallow SIFT features (c) CNN features from AlexNet pool5 (d)  CNN features from VGG Conv5\_3.
+    %The changepoints recovered from \tsc are highlighted as black triangles.
+    \label{fig:tsne}}
+\end{figure}
+
+\subsubsection{End-to-End Evaluation}
+For all subsequent experiments on real data, we used a pre-trained VGG CNN conv5\_3 and encoded with PCA with 100 dimensions. 
+
+
+\vspace{0.25em}
+\noindent\textbf{1. Suturing: } 
+We apply our method to a subset of the JIGSAWS dataset~\cite{gao2014jigsaws} consisting of surgical task demonstrations under teleoperation using the da~Vinci surgical system. The dataset was captured from eight surgeons with different levels of skill, performing five repetitions each of suturing and needle passing.
+\tabref{jigsaws} lists quantitative results for both needle passing and suturing with both \textsf{ss} and NMI agreement with the human labels.
+Demonstrations from the JIGSAWS dataset were annotated with the skill-level of the demonstrators (Expert (E), Intermediate (I), and Novice (I)).
+For the suturing dataset, we find that using both kinematics and video gives up-to 30.1\% improvement in \textsf{ss} and 52.3\% improvement in NMI over using kinematics alone.
+Not surprisingly, we also find that the expert demonstrations, which are usually smoother and faster, lead to improved segmentation performance when using only the kinematic data.
+However, when we incorporate the visual data, the trend is not as clear.
+We speculate this has to do with the tradeoff between collecting more data (denser clusters and more accurate modeling) versus inconsistencies due to novice errors, and this tradeoff is evident in higher dimensional data.
+
+We visualize the results of the segmentation on one representative trajectory~(Figure \ref{fig:suturing}).
+With combined kinematics and vision, \tsc learns many of the important segments identified by annotation in \cite{gao2014jigsaws}.
+Upon further investigation of the false positives, we found that they corresponded to meaningful actions missed by human annotators.
+\tsc discovers that a repositioning step where many demonstrators penetrate and push-through the needle in two different motions.
+While this is largely anecdotal evidence, we were able to find some explanations for some of the false positives found by \tsc.
+
+%This emphasizes than manual annotation and pre-defined dictionary methods are sensitive to human bias and inconsistency in segmentation criteria.
+
+% applies a more consistent criteria than manual annotation based on domain knowledge.
+
+% ALL OF JIGSAWS RESULTS
+\begin{figure}[!ht]
+%\vspace{-10pt}
+    \centering
+    \includegraphics[width=\linewidth]{tsc-experiments/suturing-v4}
+    \caption{The first row shows a manual segmentation of the suturing task in 4 steps: (1) Needle Positioning, (2) Needle Pushing, (3) Pulling Needle, (4) Hand-off. \tsc extracts many of the important transitions without labels and also discovers un-labled transition events.
+    \label{fig:suturing}}
+% \vspace{-15pt}
+\end{figure}
+
+
+\begin{table}[ht!]
+    %\vspace{-10pt}
+    \centering
+    \caption{Comparison of \tsc performance on Suturing and Needle Passing Tasks. We compare the prediction performance by incrementally adding demonstrations from Experts~(E), Intermediates~(I), and Novices~(N) respectively to the dataset.\label{tab:jigsaws}}
+    \resizebox{\linewidth}{!}{% put in textwidth
+        \begin{tabular}{ll|l|l|l}
+        \\ \hline 
+        \multicolumn{2}{c|}{}    & \multicolumn{1}{c|}{Kin} & \multicolumn{1}{c|}{Vid} & \multicolumn{1}{c}{Kin+Vid} \\ \hline \hline
+        \multicolumn{5}{l}{Silhouette Score -- Intrinsic Evaluation} \\
+        
+                & E+I+N & 0.518$\pm$0.008  &  0.576$\pm$0.018  &  0.733$\pm$0.056\\ 
+        
+                                         & E+I   & 0.550$\pm$0.014  &  0.548$\pm$0.015  &  0.716$\pm$0.046\\
+        
+        \multirow{-3}{*}{ Suturing}                             & E     & 0.630$\pm$0.014  &  0.515$\pm$0.021  &  0.654$\pm$0.065\\
+                                      & E+I+N & 0.513$\pm$0.007  &  0.552$\pm$0.011  &  0.557$\pm$0.010\\
+        
+                                         & E+I   & 0.521$\pm$0.006  &  0.536$\pm$0.013  &  0.666$\pm$0.067\\
+        
+        
+        \rowcolor[HTML]{E0E0E0}
+        \parbox{1.2cm}{Needle Passing}} & E     & 0.524$\pm$0.004  &  0.609$\pm$0.010  &  0.716$\pm$0.097\\
+        \hline \hline
+        
+        \multicolumn{5}{l}{NMI Score -- Extrinsic evaluation against manual labels} \\ 
+        
+        
+                                         & E+I+N & 0.307 $\pm$ 0.045 &  0.157 $\pm$ 0.022  & 0.625 $\pm $ 0.034 \\
+       
+        
+        
+                                         & E+I   & 0.427 $\pm$ 0.053 & 0.166 $\pm$ 0.057   & 0.646 $\pm$ 0.039 \\ 
+        
+        
+        \multirow{-3}{*}{Suturing}       & E     &0.516 $\pm$ 0.026 &    0.266 $\pm$ 0.025 &     0.597 $\pm$ 0.096  \\ 
+        
+
+                                            & E+I+N & 0.272 $\pm$ 0.035 &  0.186 $\pm$ 0.034  & 0.385 $\pm$ 0.092 \\ 
+        
+                                         & E+I   & 0.285 $\pm$ 0.051 & 0.150 $\pm$ 0.048 & 0.471 $\pm$ 0.023  \\ 
+        
+        
+        
+        \multirow{-3}{*}{\parbox{1.2cm}{Needle Passing}} & E     & 0.287 $\pm$ 0.043& 0.222 $\pm$ 0.029& 0.565 $\pm$ 0.037 \\ \hline
+        \end{tabular}
+    }
+    \par\vspace{0pt}
+    % \vspace{-10pt}
+\end{table}
+
+
+\vspace{0.25em}
+\noindent\textbf{2. Needle Passing: } Next, we applied \tsc to 28 demonstrations of the needle passing task.
+These demonstrations were annotated in \cite{gao2014jigsaws}. 
+In this task, the robot passes a needle through a loop using its right arm, then its left arm to pull the needle through the loop. Then, the robot hands the needle off from the left arm to the right arm. This is repeated four times. 
+ Similar to the suturing dataset, we find that the combination of the features gives the best results.
+ For the needle passing dataset, we find that using both kinematics and video gives up to 22.2\% improvement in \textsf{ss} and 49.7\% improvement in NMI over using the best of either kinematics or vision alone.
+
+We found that the learned segments for the needle passing task were less accurate than those learned for the suturing task.
+We speculate that this is due to the multilateral nature of this task.
+This task uses both arms more than the suturing task, and as a result, there are many visual occlusions for a fixed camera. 
+Important features such as the needle pose and the thread may be obscured at different points during the task.
+Furthermore, we constructed the state-space using the states of both arms.
+For such a task, it may be better to segment each of the arms independently.
+
+
+
+%In this task, the robot passes a needle through a loop using its right arm, then its left arm to pull the needle through the loop. Then, the robot hands the needle off from the left arm to the right arm. This is repeated four times. 
+
+% \begin{figure}[!t]
+% \centering
+% \includegraphics[width=\linewidth]{tsc-experiments/insert.png}
+% \caption{The figure illustrates the performance of unsupervised segmentation of the 3 Step Lego Assembly Task performed with tele-operated PR2 with two techniques of manual demonstrations.}
+%  \label{fig:lego-pr2}
+% \vspace{-10pt} 
+% \end{figure}
+
+% \begin{figure}[!t]
+% \centering
+% \includegraphics[width=\linewidth]{tsc-experiments/insert.png}
+% \caption{The figure illustrates the comparison of unsupervised segmentation of the Toy Example performed with tele-operated PR2 with two techniques of manual demonstrations.}
+%  \label{fig:toyPlane-pr2human}
+% \vspace{-10pt} 
+% \end{figure}
+
+
+
+
+\vspace{5pt}
+\noindent \textbf{3. PR2: Legos and Toy Plane Assembly: }
+In our next experiment, we explore segmenting a multi-step assembly task using (1) large \textit{Lego} blocks and (2) toy \textit{Plane} from the YCB dataset~\cite{calli2015corr}. 
+We demonstrate that \tsc applies generally outside of surgical robotics.
+We collect eight kinesthetic demonstrations for each task through kinesthetic demonstrations of the task on the PR2 robot.
+\figref{pr2_toyplane} illustrates the segmentation for the plane assembly task.
+We find the plane assembly task using kinematics or vision alone results in a large number of segments.
+The combination can help remove spurious segments restricting our segments to those transitions that occur in most of the demonstrations--agreeing in similarity both kinematically and visually.
+
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{tsc-experiments/pr2_plane_assembly-v5}
+\caption{We compare \tsc on 12 kinesthetic demonstrations (top) and
+8 human demonstrations (bottom).
+No kinematics were available for the human demonstrations.
+We illustrate the segmentation for an example demonstration of each.
+Our manual annotation of the task has five steps and \tsc recovers this structure separately for both Kinesthetic demos on PR2 and Human demos with the same visual features. \figlabel{pr2_toyplane}}
+\vspace{-20pt}
+\end{figure}
+
+% \subsubsection{Human Demonstration of Toy Plane Assembly}
+\vspace{5pt}
+\noindent \textbf{4. Human Demonstration of Toy Plane Assembly: }
+We extend the toy plane assembly experiment to collect eight demonstrations each from two human users. These examples only have videos and no kinematic information. We note that there was a difference between users in the grasping location of fuselage. 
+% We used \TSC to learn segmentation for human demonstrations and the results are showed in \figref{toyPlane-pr2human}.
+The results of \tsc performance are summarized in Table~\ref{tab:pr2}.
+An example of toy plane assembly by both robot and human is qualitatively compared in Figure~\ref{fig:pr2_toyplane}. 
+This emphasizes on the benefits of \tsc, namely, that we do not tune the features to any specific robot or task. 
+These are general visual features that can apply broadly even when a human is performing demonstrations.
+We omit a visualization of the results for the Lego assembly. However, we summarize the results quantitatively in Table \ref{tab:pr2}.
+
+% one example each of the \textit{Lego} and \textit{Plane} assembly task is illustrated in Figures~\ref{fig:lego-pr2} and \ref{fig:pr2_toyplane} respectively.
+% The results for clustering evaluation and comparison with a set of manual labels using dynamic time warping distance are tabulated in \tabref{pr2}.
+
+
+% PR2 TABLE
+\begin{table}[!t]
+\centering
+\resizebox{\linewidth}{!}{% put in textwidth
+    \begin{tabular}{l|l|l|l}
+        \hline
+        \multicolumn{1}{c|}{}& \multicolumn{1}{c|}{K} & \multicolumn{1}{c|}{Z} & \multicolumn{1}{c}{K+Z} \\ \hline \hline 
+        \multicolumn{4}{l}{Silhouette Score -- Intrinsic Evaluation}  \\
+        Lego (Robot)    & 0.653$\pm$0.003 & 0.644$\pm$0.026 & 0.662$\pm$0.053 \\
+        \rowcolor[HTML]{E0E0E0}
+         Plane (Robot)   & 0.741$\pm$0.011 & 0.649$\pm$0.007 & 0.771$\pm$0.067 \\
+        Plane (Human 1) & -- & 0.601 $\pm$0.010  & -- \\ 
+        \rowcolor[HTML]{E0E0E0}
+        Plane (Human 2) & -- & 0.628 $\pm$0.015  & -- \\ \hline \hline
+        \multicolumn{4}{l}{\cellcolor[HTML]{FFC72C}NMI Score -- Extrinsic evaluation against manual labels}  \\ 
+        Lego (Robot)    & 0.542 $\pm$ 0.058  & 0.712 $\pm$ 0.041  & 0.688 $\pm$ 0.037  \\
+        \rowcolor[HTML]{E0E0E0}
+         Plane (Robot)   & 0.768 $\pm$ 0.015  & 0.726 $\pm$ 0.040  & 0.747 $\pm$ 0.016    \\ 
+        Plane (Human 1) & -- & 0.726 $\pm$ 0.071  & -- \\ 
+        \rowcolor[HTML]{E0E0E0}
+        Plane (Human 2) & -- & 0.806 $\pm$ 0.034  & -- \\ \hline
+    \end{tabular} 
+    }
+\caption{Plane and Lego Assembly Tasks. Both tasks show improvements in clustering and prediction accuracy using multi-modal data as compared to either modality. Further, only vision ($Z$) is available for human demos of the plane assembly task. Comparable segmentation results are obtained using only video input for human demos. \textit{Higher} Silhoutte Scores and NMI scores are better, respectively. \label{tab:pr2}}
+\vspace{-10pt}
+\end{table}

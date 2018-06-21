@@ -1,17 +1,12 @@
-\chapter{Learning Hierarchies From Data}
+\chapter{Discovery of Parametrized Options}
 \setcounter{secnumdepth}{1}
-\section{Introduction}
-While \emph{ab initio} (no prior model) RL  has demonstrated impressive results, it is difficult to apply to many sequential decison problems of interest. 
-In particular, one challenge is high-dimensional and/or combinatorial action spaces.
- For example, in program synthesis, the search branching factors can extend into the millions~\cite{menon2013machine}. And, in graph search problems, the number of actions available at each expansion grows with the number of connected vertices. From a control theoretic perspective, both of these scenarios are ``perfectly observable''; however, applying existing RL approaches to such problems can still be very challenging (see the challenges in solving Montezuma's revenge~\cite{bellemare2016unifying}).
-
-In these high-dimensional action spaces, the vast majority of action sequences are irrelevant to the task at hand.
+In high-dimensional or combinatorial action spaces, the vast majority of action sequences are irrelevant to the task at hand.
 Therefore, purely random exploration is likely to be prohibitively wasteful.
 What makes many sequential problems particularly challenging for is that all of these random action sequences are, in a sense, equally irrelevant. 
 This means that there might not be any signal in the sampled data that the Q-learning algorithm can exploit.
 Until the agent serendipitously discovers such a sequence, no learning can occur.
 
-In the first section of this dissertation, I explore this problem in the context of robotics, self-play in atari games, and program imitatation. 
+In the first section of this dissertation, I explore this problem in the context of robotics, self-play in atari games, and program imitation. 
 The basic insight is that while the space of all action sequences $\mathcal{A}^T$ is very large, there is often a much smaller subset of those that are potentially relevant to typical problem instances $\mathcal{A}_{relevant} \subset \mathcal{A}^T$. 
 Given a small amount of expert information, I describe techniques for learning $\mathcal{A}_{relevant}$ from data.
 

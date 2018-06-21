@@ -1,9 +1,9 @@
-\section{Reinforcement Learning For SQL Join Optimization}
+\chapter{Reinforcement Learning For SQL Query Optimization}
 Joins are a ubiquitous primitive in data analytics. 
 The rise of new tools, such as Tableau, that automatically generate queries has led to renewed interest in efficiently executing SQL queries with several hundred joined relations.
 Since most relational database management systems support only diadic join operators (joining two tables) as primitive operations, a query optimizer must choose the ``best'' sequence of two-way joins to achieve the k-way join of tables requested by a query. 
 
-\subsection{Introduction}
+\section{Problem Setup}
 The problem of optimally nesting diadic joins is, of course, combinatorial and is known to be NP-Hard.
 To make matters worse, the problem is also known to be practically challenging since a poor solution can execute several orders of magnitude slower than an optimal one.
 Thus, many database systems favor ``exact'' solutions when the number of relations are small but switch to approximations after a certain point.
@@ -43,13 +43,13 @@ In this paper, we explore this architecture and evaluate in what situations its 
 Our system is built on Apache Calcite and integrates with Apache Spark, Postgres SQL, and an internal join planning simulator.
 We present results on a variety of experimental workloads and datasets.
 
-\subsection{Problem Statement}
+\subsection*{Problem Statement}
 Consider the following query model.
 Let $\{R_1,...,R_k\}$ define a set of relations, and let $\mathcal{R} = R_1 \times ... \times R_k$ denote the cartesian product.
 We define an inner join query $q$ as a subset of $q \subseteq \mathcal{R}$ as defined by a conjunctive predicate $\rho_1 \wedge ... \wedge \rho_j$ where each expression $\rho$ is binary boolean function of the attributes of two relations in the set $\rho = f(R_i.a, R_j.b)$.
 Extending our work to consider left and right outer joins is very straight-forward but we will defer that to that to future work.
 
-\subsubection{Example}
+\subsubsection{Example}
 Suppose, we have a database of three relations denoting employee salries:
 \[
 \text{Emp}(id, name, rank)
@@ -69,11 +69,11 @@ SELECT *
 \end{lstlisting}
 In this schema, $\mathcal{R}$ denotes the set of tuples $\{(e \in Emp, p \in Pos, s \in Sal)\}$. There are two predicates $\rho_1 = Emp.rank = Pos.rank$ and $\rho_2 = Pos.code = Sal.code$, combined with a conjunction. 
 
-\subsubection{Join Optimization}
+\subsubsection{Join Optimization}
 Outside of the academic literature, most commercial query processing engines can only execute ``diadic'' joins, that is, joins between two relations. In the above query, one has several possible options on how to execute that query. For example, one could execute the query as $Emp \bowtie (Sal \bowtie Pos)$. Or, one could execute the query as $Sal \bowtie (Emp \bowtie Pos)$. Enumerating all such executions grows combinatorially even if the join $\bowtie$ is symmetric and commutative.
 We assume that the join operation is commutative, left associative, and right associative.
 
-\subsubection{Query Graph Model}
+\subsubsection{Query Graph Model}
 Enumerating the set of all possible diadic join plans can be elegantly expressed as operations on a graph.
 
 \begin{definition}[Query Graph]
@@ -90,7 +90,7 @@ Note that each contraction reduces the number of vertices by $1$. And, that ever
 
 The sequence of contractions exactly corresponds to a diadic join plan. Going back to our running example, suppose we start with a query graph consisting of the vertices $(Emp, Pos, Sal)$. Let the first contraction be $c_1 = (Emp, Pos)$, this leads to a query graph where the new vertices are $(Emp+Pos, Sal)$. Applying the only remaining possible contraction, we arrive at a single remaining vertex $Sal+(Emp+Pos)$ corresponding to the join plan $Sal \bowtie (Emp \bowtie Pos)$. Many readers might be familiar with the popular System R algorithm for join enumeration that enumerates left-deep join plans avoiding cartesian products. The graph contraction process enumerates \emph{all} possible joins including ``bushy'' joins.
 
-\subsubection{Sequential Decision Problem}
+\subsubsection{Sequential Decision Problem}
 The job of the query optimizer is to find the best possible one of these contraction sequences. It does so by having a cost model $J$ which is a function that can estimate the incremental of a particular contraction $J(c) \mapsto \mathbb{R}_+$. Thus, the optimization problem can be described as follows.
 
 \begin{problem}[Join Optimization Problem]
@@ -100,7 +100,7 @@ Let $G$ define a query graph and $J$ define a cost model. Find a sequence of $c_
 \]
 \end{problem}
 
-\subection{Related Work}
+\subsection*{Background}
 The formulation of join optimization as a searching for sequence of graph contractions allows us to pose many common algorithms in a single unified framework. A \emph{greedy} solution to this problem is to optimize each $c_i$ independently. The algorithm proceeds as follows: (1) start with the query graph, (2) find the lowest cost contraction, (3) update the query graph and repeat. This greedy algorithm has a computational complexity of $O(|V|^3)$, and is described in \cite{d}.
 
 The greedy algorithm, of course, does not consider how local decision might affect future costs. To find a globally optimal solution one must consider the long term value of a decision. Classical sequential decision making theory formalizes this concept with the characterization of the cost-to-go function.
@@ -175,11 +175,11 @@ This loss can be optimized with gradient descent.This algorithm is called the De
 The key implication is that the neural network allows for some ability for the optimizer to extroplate the cost-to-go even for plans that are not enumerated. This means that if the featurization $f_G$ and $f_c$ are designed in a sufficiently general way, then the neural network can represent cost-to-go estimates across an entire workload--not just a single planning instance.
 
 
-\subsection{Learning to Optimize}
+\section{Learning to Optimize}
 Next, we present the entire optimization algorithm for learning join enumeration.
 We will first presented the algorithm only for the enumeration problem, and then we contextualize the optimizer for full Select-Project-Join queries accounting for single relation selections, projections, and sort-orders.
 
-\subsubsection{Featurizing the Join Decision}
+\subsection*{Featurizing the Join Decision}
 We need to featurize the query graph $G$ and a particular contraction $c$, which is a tuple of two vertices from the graph. 
 
 \vspace{0.5em} \noindent \textbf{Participating Relations: } The first step is to construct a set of features to represent which relations are participating the in the query and in the particular contraction. Let $A$ be the set of all attributes in the database (e.g., $ \{Emp.id, Pos.rank,...,Sal.code,Sal.amount\}$). Each relation $r$ (including intermediate relations that are the result of join) has a set of \emph{visible attributes}; those attributes present in the output $A_r \subseteq A$. So every query graph $G$ can be represented by its visible attributes $A_G$. Each contraction is a tuple of two relations $(l,r)$ and we can get the visible attributes $A_l$ and $A_r$ for each. Each of these subsets $A_G, A_l, A_r$ can be represented with a binary 1-hot encoding representing which subset of the attributes are present. We call the concatenation of these vectors $V_{rel}$ and it has dimensionality of $3\cdot|A|$. 
@@ -190,7 +190,7 @@ We need to featurize the query graph $G$ and a particular contraction $c$, which
 The Q-function is represented as a multi-layer perceptron (MLP) neural network.
 It takes as input two feature vectors $V_{rel}$ and $V_{cond}$. Experimentally, we found that a two-layer MLP gave the best performance relative to the training time. We implmented the training algorithm in \textsf{DL4J} a java framework for model training with a standard DQN algorithm.
 
-\subsubsection{Generating the Training Data}
+\subsection*{Generating the Training Data}
 Experimentally, we found that the process of generating the process of training data for a given workload was very important for robust learning.
 The basic challenge is that the Q-function must accurately be able to differentiate between good plans and bad plans.
 If the training data only consisted of optimal plans, then the learned Q-function may not accurately score poor plans. Likewise, if the training purely sampled random plans--it may not see very many instance of good plans.
@@ -224,10 +224,10 @@ We have an optimizer that samples some number of initial queries from the worklo
 After training, we will have a parametrized estimate of the Q-function, $Q_\theta(f_G,f_c)$. For execution, we simply go back to the standard algorithm as in the greedy method but instead of using the local costs, we use the learned Q-function: (1) start with the query graph, (2) featurize each contraction (2) find the lowest \textbf{estimated Q-value} contraction, (3) update the query graph and repeat.
 
 
-\subsection{Optimizer Architecture}
+\section{Optimizer Architecture}
 In the previous section, we described the join enumeration algorithm. Now, we contextualize the enumeration algorithm in a more fully featured optimization stack. In particular, there are aspects of the featurization and graph definitions that have to change based on the nature of the queries.
 
-\subsubsection{Selections and Projections}
+\subsection*{Selections and Projections}
 To handle single relation selections and projections in the query, we have to tweak the feature representation. This is because upstream selections and projections will change the cost properties of downstream joins. As in the classical optimizers, we eagerly apply selections and projections to each relation. 
 
 This means that each relation in the query graph potentially a different number of attributes and a different cardinality than the base relation. While the proposed featurization does capture the visible attributes, it does not capture changes in cardinality due to upstream selections. 
@@ -236,13 +236,13 @@ Here, we leverage the table statistics present in most RDBMS. For each relation 
 In the featurization described in the previous section, we have a set of binary features $V_{rel}$ that describe the participating attributes.
 We multiply the reduction factors $\delta_r$ for each table with the features corresponding to attributes derived from that relation.
 
-\subsubsection{Physical Operator Selection}
+\subsection*{Physical Operator Selection}
 To add support for an optimizer that selects physical operators, we simply have to add ``labeled'' contractions, where certain physical operators are eligible. Suppose we have a set of possible physical operators, e.g., \textsf{nestedLoop}, \textsf{sortMerge}, \textsf{indexLoop}. We would simply add an additional feature to the Q-Function that captures which physical operator is selected.
 
-\subsubsection{Indexes and Sort Orders}
+\subsection*{Indexes and Sort Orders}
 Similarly, adding support for indexes just means adding more features. We eagerly use index scans on single relation selections, and can use them for joins if we are optimizing physical operators. We can add an addition set of binary features $V_{ind}$ that indicate which attributes have indexes built on them. Handling, sort-orders are similar and we have to add features describing which attributes need to be finally sorted in the query.
 
-\subsubsection{Summary and System Architecture}
+\subsection*{Summary and System Architecture}
 Surprisingly, we found that we could build a relatively full featured query optimizer based on a Deep RL join enumeration strategy.
 Our system, called \qsys, is built on Apache Calcite.
 The system connects to various database engines through a JDBC connector. It executes logically optimized queries by re-writing SQL expressions and setting hints.
