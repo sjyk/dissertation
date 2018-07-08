@@ -1,6 +1,4 @@
 \chapter{Reinforcement Learning for Surgical Tensioning}
-
-\section{Introduction}
 Robotic surgical assistants (RSAs), such as Intuitive Surgical's da Vinci, facilitate precise minimally invasive surgery~\cite{veldkamp2005laparoscopic}. These robots currently operate under pure tele-operation control, but introducing assistive autonomy has potential to improve surgical training, assist surgeons, reduce fatigue, and facilitate tele-surgery.
 For example, when cutting thin tissue with surgical scissors, a surgeon may use a second or even a third tool to pin down and fixture the tissue.
 This technique, called tensioning (also called traction), adds additional constraints on the material to prevent deformations during the cutting from drastically changing the position of the desired cutting path.
@@ -9,21 +7,13 @@ However, practically, the surgeon's tensioning policy is often sub-optimal becau
 
 Therefore, it would be beneficial to automatically synthesize tensioning policies to best assist an open loop cutting trajectory. The first challenge is modeling the dynamics of cutting and tensioning. One way to model deformable sheets is with a 3-dimensional mass-spring-damper network. A sheet is a planar graph of point masses connected by damped springs at edges. $k$ of the point masses are constrained to be fixed at a particular 3D location, i.e., they are tensioned, and the positions of the remaining masses is determined by the dynamics induced these constraints. At each time step, the constraint can be moved to a new location. Cutting is modeled by removing a single edge in the graph at each time-step.  For $k$ assistive arms, the optimization objective is to plan  sequence of $k$ movable boundary value constraints to maximize cutting accuracy.
 
-In prior work, we designed a tensioning planner using Trust Region Policy Optimization (TRPO) over the model to simulate the effect of different tensions and find a tensioning policy to assist a given cutting trajectory. 
-The planner optimized was the final symmetric difference between a perfectly cut contour and the actual cut.
-The learned policy can assist both human surgeons~\cite{reiley2010motion} and automated surgical cutting procedures to improve the reliability and accuracy of surgical cutting~\cite{swirl2016,murali2015learning}.
-While initial results suggest that this adaptive policy is effective ($43.3\pm8.6\%$ better than a fixed-policy baseline over 17 contours), each new contour required expensive training of a new policy (approximately 50,000 rollouts). 
-More efficient policy search techniques are required if we want to effectively assist a human surgeon seamlessly during a procedure.
+This problem constitutes a highly non-convex optimal control problem, whether cutting accuracy is a non-convex objective that measures the symmetric difference between a perfectly cut contour and the actual cut. Furthermore, the underlying deformable manipulation system is also highly non-linear. 
+Efficient policy search techniques are required if we want to effectively assist a human surgeon seamlessly during a procedure.
+What is different about this problem is that we do not have access to ``expert demonstrations'' as in the previous chapters. 
+Instead, we show that we can get an approximate suboptimal controller using physics-based approximations and then use Deep RL to fine-tune this controller. 
+The archite
 
-One clear point for improvement is actually using the underlying simulation model to intelligently initialize TRPO.
-The key challenge is that the objective the TRPO optimizes is non-convex and the system is non-linear.
-This paper explores whether it is possible to linearize the system locally and solve for a quadratic greedy objective as a proxy.
-This solution serves as an initialization which TRPO will further refine.
-Our initial results suggest that the analytic model is within 25\% of the final reward of TRPO achieves on three curves.
-This serves as a good initialization which significantly improves the convergence of TRPO.
-
-
-\section{Related Work}
+\section{Motivation}
 Nienhuys and Van Der Stappen proposed the seminal work on modeling cutting with finite-element mesh models~\cite{nienhuys2001surgery}.
 This work led to a bevy of follow-on work in robotics and graphics modeling the cutting problem, especially in the context of surgical simulation~\cite{bielser2004state, sifakis2007arbitrary, mendoza2003simulating, steinemann2006hybrid}.
 In parallel, the graphics community studied fabric modeling with similar finite-element techniques~\cite{gale2016patterning, brookes16tearable}.
@@ -39,7 +29,7 @@ An obstacle to applying Deep RL to physical robots is that large amounts  of dat
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.32\textwidth]{illustrations/msd-1.png}
+\includegraphics[width=0.32\textwidth]{tps-experiments/msd-1.png}
 \caption{This illustration describes a basic mass-spring-damper system with spring constant $k$ and damping constant $c$. \label{illus:1}}
 \end{figure}
 
@@ -67,7 +57,7 @@ The resulting equations of motion are:
 
 
 
-\section{Simulator}
+\subsection*{Simulator}
 We can use this model to design a simulator for cutting deformable sheets.
 Let $G_{x,y,z} \subset \mathbf{R}^3 $ be a three-dimensional global coordinate frame. 
 We denote the set of points on this sheet as $\Sigma$, and $\Sigma^{(G)}$ is the locations of these points in the global frame.
@@ -91,15 +81,15 @@ p' = u
 \]
 This means that regardless of the forces applied to this point it will remain at position $u$.
 
-\section{Problem Statement}
+\subsection*{Manipulation Actions}
 We are given a rectangular planar sheet and a simple algebraic desired cutting contour of bounded curvature, which can be either closed or open.
 
-\subsection{Cutting}
+\subsubsection{Cutting}
 We assume that one arm of the robot is designated as the cutting arm and the other as the tensioning arm. A cutting contour is a sequence of points $C$ on the surface of the sheet. The cutting arm operates in an open-loop trajectory that attempts to cut along $C_0$, the position of the cutting contour in the global frame at time zero.
 Error is measured using the symmetric difference between the desired contour on the sheet and the achieved contour cut. These will be different due to deformation of the sheet during cutting.
 Let $X$ be the set of points inside a closed intended trajectory and let $Y$ be the set of points inside a closed simulated trajectory. The symmetric difference is then the exclusive-or $A \oplus B$ of the two sets. For open contours, the contours are closed by forming boundaries with the edges of the sheet.
 
-\subsection{Tensioning}
+\subsubsection{Tensioning}
 Since the cutting is open-loop it cannot account for deformation, and this is why we need tensioning to apply feedback based on the state of the sheet.
 
 \begin{definition}[Tensioning]
@@ -139,13 +129,13 @@ The state space is a tuple consisting of the time index of the trajectory $t$, t
 This is a sample-based approximation of tracking $\Sigma^{(G)}_t$.
 
 
-\section{Model-based Initialization}
+\section{Approximate Solution}
 Directly applying the RL algorithm to the FEM simulator has a two problems: (1) large sample complexity and (2) local minima.
 Even in an optimized simulator, every new contour required 5 minutes of learning before a viable policy was found.
 The key insight was that ultimately the simulator used in RL was based on an analytic model.
 Thus, we explored whether we could initialize learning with a prior developed from a simplified objective.
 
-\subsection{Small Deviation Approximation}
+\subsection*{Small Deviation Approximation}
 The equation of motion defines a non-linear system. We are, however, modeling point masses on a sheet that will have relatively small deformations from the resting length. 
 We further assume that there is no damping $c=0$ or external forces.
 For linearization, it is more convenient to work in Cartesian coordinates, so we can also re-parametrize the equations using Pythagorean identities:
@@ -208,7 +198,7 @@ The resulting system can be described in the state-space model for a position of
 \ddot{p} = \mathbf{L} (\sum_{q \in N(p) }  (p - q) - \rho)
 \end{equation}
 
-\subsection{Tensioning Problem}
+\subsection*{Tensioning Problem}
 The key trick to understanding tensioning based on this linearization is an efficient computation of the equilibrium state, i.e., $\ddot{p} = 0$.
 Let $X \in \mathbb{R}^{N \times 3}$ denote the positional state of each of the masses.
 For $N$ masses and $E$ edges, let $A$ be an $E \times N$ matrix where every $A_{ij} = 0$ if edge i is not incident to the mass $j$, $A_{ij} = \pm 1$ for edges incident to the mass (pushing or pulling, can be selected arbitrarily).
@@ -244,13 +234,13 @@ X_{free}  = C U + D
 \]
 
 \begin{figure*}[t]
-\includegraphics[width=0.32\textwidth]{figs/trpo-full-a.png}
-\includegraphics[width=0.32\textwidth]{figs/trpo-full-b.png}
-\includegraphics[width=0.32\textwidth]{figs/trpo-full-c.png}
+\includegraphics[width=0.32\textwidth]{tps-experiments/trpo-full-a.png}
+\includegraphics[width=0.32\textwidth]{tps-experiments/trpo-full-b.png}
+\includegraphics[width=0.32\textwidth]{tps-experiments/trpo-full-c.png}
 \caption{This plot shows the expected reward over 50 trials for TRPO, TRPO initialized with the analytic approximation (TRPO AN), and the analytic model on its own. Three cutting curves are visualized of increasing difficulty with a single pinch point marked in red. Results suggest that initializing with an analytic model can greatly accelerate learning.\label{fig:1}}
 \end{figure*}
 
-\subsection{Optimization}
+\subsection*{Optimization}
 To find tensioning directions and magnitudes, we have to pose an optimization problem to set the values of U as the grid is cut.
 The model and its equilibrium states give us a way to quantify deformation induced by cutting.
 $C$ and $D$ depend on the structure of the graph at time $t$.
@@ -270,7 +260,9 @@ Once this open-loop strategy is learned, we can initialize TRPO by training the 
 Out intuition is that this analytic model gets close to the optimal policy and TRPO simply has to refine it.
 This mitigates the effects of bad local minima far from the optimum and slow convergence.
 
-\section{Results}
+\section{Experiments}
+
+\subsection*{Performance}
 We present a set of illustrative initial experiments in this paper.
 In the first experiment, we generated three contours of increasing difficulty and learned tensioning policies for a single pinch point $k=1$.
 We compare TRPO with no initialization, TPRO+An with the analytic initialization, and An which is just the analytic model.
@@ -286,6 +278,265 @@ For comparison, the analytic optimization requires two orders of magnitude less 
 And, we explore using the combination of the two to achieve higher accuracy results with less rollouts.
 
 \begin{figure}[ht]
-\includegraphics[width=\columnwidth]{figs/trpo-6.png}
+\includegraphics[width=\columnwidth]{tps-experiments/trpo-6.png}
 \caption{(A) We measure the number of episodes needed for TRPO to crossover, i.e., match the performance of the analytic method, as a function of the number of tensioning arms to plan for. (B) For comparison, we plot the wall clock time of TRPO and the analytic optimization on a log scale. The optimization is order of magnitudes faster, but may be suboptimal. \label{fig:2}}
 \end{figure}
+
+\subsection*{End-to-End}
+\newcommand{\shapesize}{0.75}
+\begin{table}[t]
+\centering
+\caption{\textbf{Evaluation of \tpsalgo}: For the 17 contours shown, we evaluate the three tensioning policies described in \secref{policyeval}.  We measure and report performance in terms of relative percentage improvement in symmetric difference over a baseline of no tensioning for the tensioning trials. The 95\% confidence interval for 10 simulated trials is shown for fixed, analytic, and Deep RL tensioning, while the mean absolute symmetric difference error is reported for the no-tensioning baseline experiments.
+%The formula to compute this is $100 \times \frac{\text{score}_i - \text{score}_j}{\text{score}_j}$, where $i \in$ \{fixed, analytic, Deep RL\} and $j=$no-tensioned.
+The data suggest that \tpsalgo\, performs significantly better in comparison to the fixed and analytic baseline. The corresponding pinch points used for fixed and \tpsalgo\, are indicated in red. The analytic pinch point is the centroid of the shape.}
+\resizebox{\linewidth}{!}{% put in textwidth
+\begin{tabular}{llcccc}
+% \toprule
+\hline
+\rowcolor[HTML]{CBCEFB}
+&\textbf{Shape} & \multicolumn{4}{c}{\textbf{Tensioning Method}} \\
+\rowcolor[HTML]{FFC72C}
+& & \multicolumn{1}{c}{\textbf{No-Tension}} & \multicolumn{1}{c}{\textbf{Fixed}} & \multicolumn{1}{c}{\textbf{Analytic}} & \multicolumn{1}{c}{\textbf{Deep RL}} \\
+% \midrule
+\hline  \hline
+1  &  \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_21.png} &        17.4 &          -20.69$\pm$4.44 &        -149.43$\pm$10.24 &  \textbf{64.37$\pm$5.77} \\
+2  &  \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_20.png} &        22.5 &           32.44$\pm$1.74 &         -117.78$\pm$0.00 &  \textbf{55.11$\pm$7.40} \\
+3  &  \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_12.png} &        23.2 &          -21.12$\pm$5.41 &           18.10$\pm$1.78 &  \textbf{38.36$\pm$9.43} \\
+4  &  \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_11.png} &       102.9 &            7.48$\pm$0.62 &           30.42$\pm$1.45 &  \textbf{36.15$\pm$3.97} \\
+5  &  \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_17.png} &        41.1 &            0.49$\pm$7.99 &            9.98$\pm$0.00 &  \textbf{52.31$\pm$7.26} \\
+6  &  \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_18.png} &        42.0 &  \textbf{55.00$\pm$1.77} &           11.43$\pm$1.52 &           45.95$\pm$6.60 \\
+7  &  \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_19.png} &        40.2 &           22.64$\pm$1.14 &            3.73$\pm$1.46 &  \textbf{33.83$\pm$3.99} \\
+8  &  \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_16.png} &        40.0 &           -1.25$\pm$0.82 &            1.75$\pm$2.83 &  \textbf{35.50$\pm$4.67} \\
+9  &  \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_14.png} &        66.6 &            2.85$\pm$2.60 &  \textbf{34.68$\pm$2.25} &           28.38$\pm$4.98 \\
+10 &   \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_1.png} &        63.6 &           25.63$\pm$2.98 &           20.60$\pm$3.60 &  \textbf{41.35$\pm$9.90} \\
+11 &   \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_9.png} &        73.6 &            2.31$\pm$1.66 &           24.32$\pm$0.98 &  \textbf{56.11$\pm$8.99} \\
+12 &  \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_10.png} &        79.3 &           22.82$\pm$4.51 &           55.49$\pm$0.38 &  \textbf{63.56$\pm$3.61} \\
+13 &   \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_8.png} &        94.3 &            3.29$\pm$2.05 &           27.15$\pm$0.32 &  \textbf{34.04$\pm$5.87} \\
+14 &   \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_3.png} &        71.7 &            3.07$\pm$7.15 &           -2.51$\pm$0.61 &  \textbf{39.89$\pm$8.20} \\
+15 &   \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_2.png} &       178.7 &           74.71$\pm$1.22 &           80.75$\pm$0.88 &  \textbf{81.25$\pm$1.38} \\
+16 &   \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_4.png} &       114.6 &           -8.03$\pm$2.16 &  \textbf{31.06$\pm$0.62} &           29.06$\pm$8.81 \\
+17 &   \includegraphics[height= \shapesize cm]{tps-experiments/shapes/pts_7.png} &        74.8 &           10.29$\pm$2.08 &  \textbf{28.34$\pm$2.07} &            0.80$\pm$7.03 \\
+\midrule
+% \hline 
+\rowcolor[HTML]{FFC72C}
+\multicolumn{2}{c} { Mean (\%)} &  &13.54$\pm$9.84 &
+9.70$\pm$21.96 & 
+\textbf{43.30$\pm$8.61}  \\
+\bottomrule
+% \hline
+\end{tabular}
+}
+\vspace{-10pt}
+\tablabel{scores}
+\end{table}
+
+% \begin{figure*}
+% \vspace{-10pt}
+%     \centering
+%     \vspace{-5pt}
+%     \includegraphics[width=\textwidth]{./tps-experiments/tensioning-algos.png}
+%     \caption{A comparison of all of the tensioning policies. (A) No tensioning cuts the trajectory without using the tensioning arm, (B) Fixed Tensioning applies a fixed tension at a point, (C) Analytic applies a proportional control policy that observes the difference between the line and the cutting arm and applies tension proportional to the error and (D) Adaptive tensioning is the proposed approach that tracks the state of the gauze using fiducial points.  }
+%     \figlabel{noise}
+%     \vspace{-15pt}
+% \end{figure*}
+	
+% \subsection*{Simulation Experiments}
+% \subsubsection{\tpsfull}
+Next, we compare \tpsalgo to alternative tensioning approaches.
+We first evaluate the techniques in terms of performance by calculating the symmetric difference between the target pattern and actual cut.
+Then, we compare the techniques in terms of robustness by tuning the techniques for one simulated parameter setting and then applying them to perturbations.
+
+% \subsubsection{Evaluation of \tps}
+\subsection*{Cutting Accuracy}
+\label{sec:policyeval}
+We manually drew \numshapes different closed and open contour to evaluation in simulation, as illustrated in  \tabref{scores}. 
+%\todo{do you do all experiments for all 21 shapes? if not, make this into an experiment section not as part of setup}
+For each of the contours, we evaluated four different tensioning methods:
+\begin{itemize}
+\item \emph{Not Tensioned:} Single-arm cutting is performed with no assisted tensioning other than the stationary corner clips that fix the sheet in place.
+\item \emph{Fixed Tensioning:} The material is pinched at a single point with the gripper arm (with corner points still fixed in place), but no directional tensioning is applied. We simulate area contact by pinching a circular disc.
+\item \emph{\analyticname Tensioning:} Tensioning is proportional to the direction and magnitude of the error in the  3D position of the cutting tool and the closest point on the desired contour. The gain was hand-tuned on randomly-chosen contours and is fixed to 0.01.
+\item \emph{\tpsalgo } This policy is described in detail in \secref{learning}. A separate policy is trained for each shape, this requires 20 iterations of TRPO in the simulator.
+\end{itemize}
+
+\vspace{0.5em}
+
+% More formally, let $X$ be the set of points inside a closed intended trajectory and let $Y$ be the set of points inside a closed simulated trajectory. The symmetric difference is then simply the exclusive-or $A \oplus B$ of the two sets. Open curves are treated as closed curves by forming boundaries with the edges of the cloth. \todo{ replace with image, cut, or condense into footnote. don't need to go into detail of SD}.
+For the \tpsalgo, the pinch point used was  chosen by the algorithm described in \secref{planning} and \secref{learning}. For the analytic tensioning model, the centroid of the contour is used as the pinch point. For the fixed policy, the point was chosen by random search over the feasible set of points.
+Performance is measured using the symmetric difference between the desired contour and the actual cut.
+
+The averaged symmetric difference scores for each instance  and tensioning method are reported in \tabref{scores}.  
+The success of the different tensioning algorithms are presented as the percentage of improvement in symmetric difference score over the non-tensioned baseline. 
+The average of the scores over all \numshapes contours are also included in the table.   
+For the selected set of contours, \tpsalgo achieves the best average relative improvement of $43.30\%$, the analytical method $9.70\%$, and the fixed approach $13.54\%$.
+%{\footnotesize
+%\begin{table}[h]
+%\centering
+%\begin{tabular}{ c c c }
+%passive tension & analytic tension & learned tension\\
+%\hline \hline%
+%	$30.34 \pm% 2.00$\% & $10.12 \pm 7.66$\% & $43.26 \pm 2.94$\%
+%\end{tabular}%}
+%\caption{caption}\label{tab:average21}
+%\end{table}
+\subsection*{Robustness}
+\begin{figure*}[t!]
+% \vspace{-10pt}
+\centering
+ \includegraphics[width=\linewidth]{tps-experiments/tables3.png}
+\caption{a) \textbf{Robustness to resolution}: \tpsalgo was  trained for four different mesh resolutions, and evaluated on six different resolutions. The symmetric difference error (calculated in units of vertices)  is normalized by the test environment resolution. \tpsalgo is relatively robust to changes in resolution but the performance suffers as the  difference between the mesh resolution  used for training and testing increases.\figlabel{resolution}
+b) \textbf{Robustness to Process Noise}: \tpsalgo was trained on a noise-free mesh and evaluated with different levels of Gaussian noise added to the process model (Equation \eqref{eq:vertex}). We plot the improvement of the fixed, analytic, and \tpsalgo\,tensioning over  no tensioning. \tpsalgo is at least as robust as the alternatives to noise.\figlabel{noise}
+c) \textbf{Robustness to Model Error}: We evaluate the sensitivity of the policies to varying levels of an  unmodeled external force  in Equation \eqref{eq:vertex}. For shape 9, \tpsalgo is trained using $f(t)=2500$  indicated by the red dashed line. The mean and variance for twenty trials is represented as a percentage of improvement over no tensioning. The variance for deterministic policies is small in this experiment because the simulator is deterministic as well. \figlabel{gravity}} 
+\figlabel{robustness_data}
+\figlabel{noise}
+\figlabel{resolution}
+\figlabel{gravity}
+\vspace{-10pt}
+\end{figure*}
+
+One concern with \tpsalgo is that it could overfit to the simulation environment and would not be as robust as the alternatives.
+We evaluate the robustness of \tpsalgo by training it with particular simulation parameters and then testing it in an alternative parameter setting.
+% \todo{from reviewer: you should motivate why you choose the specific set of simulations parameters and the range of variation.}
+
+
+\noindent \emph{1. Robustness to Resolution}\vspace{-0.1em}
+% \subsubsection{Robustness of Deep RL to Model Fidelity}
+\label{sec:fidelity}
+We first evaluate the learned policy's sensitivity to the resolution of the simulator. 
+We trained four different policies, each on a mesh composed of different number of vertices (100, 400, 625, 2500). These experiments were performed on shape 1, as illustrated in Table \ref{tab:scores}. We chose resolution parameters to cover a large range of fidelity while maintaining the geometry of the cloth. We used each of the four policies to cut meshes with six different resolutions for ten rollouts each.   Results are presented in  \figref{resolution} as the absolute symmetric difference error (in number of vertices) per each trained policy when simulated on a mesh of $x$ points. Our results indicate that policies trained on lower resolution simulation models still result in comparable  performance up to a very low resolution (400 vertices). This suggests that increasing the fidelity of the simulation environment provides diminishing returns for a quadratically increasing runtime. We use this as justification to limit the fidelity of our simulator for other experiments.
+
+% \begin{figure}[t!]
+% % \vspace{-15pt}
+%     \centering
+%     \includegraphics[width=0.9\linewidth]{./tps-experiments/resolutionexp2.png}\vspace{-5pt}
+%     \caption{\textbf{Robustness to resolution}: \tpsalgo was  trained for four different mesh resolutions (plotted as individual lines), and evaluated on six different resolutions (x-axis). The symmetric difference error (calculated in units of vertices)  is normalized by the test environment resolution. \tpsalgo is relatively robust to changes in resolution but the performance suffers as the  difference between the mesh resolution  used for training and testing increases.\figlabel{resolution}}
+% %    \vspace{-15pt}
+% %\end{figure}
+% %\begin{figure}
+% %\vspace{-10pt}
+% %    \centering
+%     \includegraphics[width=0.9\linewidth]{tps-experiments/noiseexp.png}\vspace{-5pt}
+%     \caption{\textbf{Robustness to Process Noise}: \tpsalgo was trained on a noise-free mesh and evaluated with different levels of Gaussian noise added to the process model (Equation \eqref{eq:vertex}). We plot the improvement of the fixed, analytic, and \tpsalgo\,tensioning over  no tensioning. \tpsalgo is at least as robust as the alternatives to noise.\figlabel{noise}}
+%     % \vspace{-15pt}
+% %\end{figure}
+% %\begin{figure}
+% %\vspace{-10pt}
+% %    \centering
+%     \includegraphics[width=0.9\linewidth]{tps-experiments/gravexp2.png}\vspace{-5pt}
+%     \caption{\textbf{Robustness to Model Error}: We evaluate the sensitivity of the policies to varying levels of an  unmodeled external force  in Equation \eqref{eq:vertex}. For shape 9, \tpsalgo is trained using $f(t)=2500$  indicated by the red dashed line. The mean and variance for twenty trials is represented as a percentage of improvement over no tensioning. The variance for deterministic policies is small in this experiment because the simulator is deterministic as well. \figlabel{gravity}}
+%     \vspace{-20pt}
+% \end{figure}
+
+
+
+% \subsubsection{Robustness of  Tensioning Policies to Process Noise}
+\vspace{2pt}
+\noindent \emph{2. Robustness to Process Noise}
+ \tpsalgo was trained in a noise-free simulated environment. 
+Then, all of the approaches were applied to shape 9 (see \tabref{scores}) with increasing levels of Gaussian noise, i.e. $N(0, k)$ for $k \in \sigma[0, 1]$,  added to the mesh vertex position update (Eq. \eqref{eq:vertex}).
+% \begin{align}
+% \label{eq:vertex_noisy}
+% p(t+1) & = \alpha p(t)  + \delta (p(t) - p(t-1)) \\
+% & - \sum_{p' \in \text{neighbors} \land \neg \text{cut}} \tau (p'(t) - p(t))  + f(t) + x \nonumber
+% \end{align}
+  We ran three trials for each policy at 10 different values of $\sigma$.  Figure \ref{fig:noise} depicts the median relative percentage scores in terms of symmetric difference for fixed tensioning, analytic tensioning, and  deep RL tensioning, over  no-tensioning. We noticed that \tpsalgo is at least as robust as the other approaches.
+% \todo{describe why this result is surprising with more details}
+
+% \subsubsection{Robustness of Tensioning Policies to Model Error}
+\vspace{2pt}
+\noindent \emph{3. Robustness to Model Error}
+We vary the magnitude of the external force applied to each vertex in the $-z$-direction. 
+\tpsalgo is trained on $f(t)=2500$ in \eqref{eq:vertex}. All four policies are tested  on varying magnitudes of $f(t)$  on shape 9, for 20 trials. We present results of this experiment in \figref{gravity}. When external forces are greater than this reference value, the Deep RL tensioning policy performs consistently better than the other policies. Both the Deep RL policy and the  analytic policy perform worse than no tensioning and fixed tensioning for low force values. Intuitively, as the downward vertical force (gravity) tends toward zero, the gauze behaves more like a rigid sheet than a deformable material, so a simpler policy will work better, and the analytic and Deep RL policies are overcompensating to error.
+
+%\subsubsection{Different Patterns}
+%\todo{sk. visualize learned policies for different patterns of gauze}
+
+%\subsubsection{Different Architectures}
+%\todo{sk. compare learning rates and rewards for different nn architectures}
+
+% In this section, we evaluate performance of the \tpsfull, which outperformed the baseline methods in simulation (\tabref{scores}), for a subset of curves using the dVRK robot. We compare the \tps\, to the analytic tensioning strategy, evaluating using the symmetric difference.
+% \vspace{3pt}
+\subsection*{dVRK: Hardware and Software}
+% \subsection*{dVRK: Hardware and Software}
+We use the Intuitive Surgical da Vinci Research Kit (dVRK) surgical robot assistant, as in~\cite{murali2015learning,sen2015automating,garg2016gpas}. We interface with the dVRK using open-source electronics and software developed by~\cite{Kazanzides2014}. The software system is integrated with ROS and allows direct robot pose control.
+We use the standard laparoscopic stereo camera for tracking fiducials on the surgical gauze. We equip the right arm with the curved scissors tooltip for cutting and the left arm with the needle driver tooltip for pinching and tensioning. The arms are located on either side of the surgical gauze to maximize the workspace for each without collision.
+% \todo{from reviewer: The experimental setup is not described with enough details (for example which tools are used? how the slave arms are placed with respect to the camera? How did you solve the hand to hand and hand to eye problem?), probably a picture of the setup will help in the description.}
+% \todo{picture of setup might be nice}
+% \vspace{2pt}
+\subsection*{Physical Evaluation of \tpsalgo} 
+We show the physical results on 4 contours using Fixed Tensioning and Deep RL using the symmetric difference as the evaluation metric in \tabref{scores-dvrk}. The tensioning policy for Deep RL was derived from simulation experiments by registering the physical gauze to a sheet in the simulator environment. 
+In this set of experiments, we used fixed tensioning as the baseline.
+The no tensioning policy frequently failed in the physical experiment so we excluded that from the results table for a fair baseline comparison.
+We were unable to evaluate the analytic method in the physical experiments because the state-estimation needed for feedback control was not possible outside of the simulated environment.
+
+\figref{teaser} also illustrates the results in the case of a circular contour. We do not attempt analytic tensioning since it requires real-time tracking of the pattern to estimate local error. We observed that 3 out of 4 of the \tpsalgo experiments performed better than the fixed tensioning policy with respect to the symmetric difference of the cut and ideal trajectories. This is the same objective the trained policy was designed to minimize in simulation. A weakness of the policy was failure to address discrete failure modes, including discrete failure modes induced by the policy itself. Failure as a result of the scissors' entanglement in the gauze occurred in both experimental groups. The active manipulation and tensioning of \tpsalgo also caused increased deformation of the cloth which occasionally directly resulted in entanglement as well. We did not optimize our policy to minimize these discrete failures, and our simulator does not model the robot with acceptable fidelity to do so. To address this, we would require very accurate models of the robot arms and tools.
+% \todo{From reviewer: The experimental evaluation is not well described, it is not clear the relations between simulated and real experiments, and how to compare the results from the two experiments.}
+% \todo{From reviewer: Section VIII on physical experiments is unfortunately the
+% weakest on the paper. Apart from the low number of
+% experiments, it would have been useful for the reader to
+% see at least a representative example of the kind of errors
+% caused during real experiments by fixed and Deep RL
+% tensioning. Having only a percentage improvement instead of
+% an absolute metric in $mm^2$ makes it difficult to judge
+% whether either method is acceptable, regardless of their
+% relative performance w.r.t. one another. This would be
+% useful especially given that the relative improvement
+% between techniques oscillates wildly in both simulations
+% and real experiments, so it is difficult for the reader to
+% assess what is actually going on. Finally, physical
+% experiments using the 17 patterns learnt during the
+% simulations would have been useful to validate the relative
+% performance shown during simulations.
+% }
+% We use an $8$\,mm Needle Driver with a PALP probe mounted on the gripper \cite{mckinley2015disposable}. 
+
+% We selected curves \todo{U, V, X, Y, Z} shown in \tabref{scores-dvrk}. The results are summarized in \tabref{exp}. \figref{teaser} also illustrates the results in the case of \todo{}.
+
+\begin{table}[t!]
+\centering
+\vspace{5pt}
+\caption{\textbf{dVRK Physical Experiments}: This table compares the relative percentage improvement in terms of symmetric difference to a baseline of fixed tensioning to \tpsalgo in experiments performed on the dVRK robot. The black dot indicates the pinch point of the gripper arm.}
+% \begin{tabular}{lll}
+% % \begin{tabular}{>{\centering}m{0.1in} l >{\centering}m{.5in} >{\centering}m{.5in} >{\centering}m{.5in}}
+% % \toprule
+% \hline
+% \rowcolor[HTML]{CBCEFB}
+% %&Shape & Tensioning Method \\
+% %\rowcolor[HTML]{CBCEFB}
+% &  Shape & Deep RL \\
+% % \midrule
+% \hline  \hline
+% 1  &  \includegraphics[height=1cm]{tps-experiments/shapes-robot/1-dot.jpg} &           \textbf{118.63 \%}
+% \\
+% \rowcolor[HTML]{E0E0E0}
+% 2 &   \includegraphics[height=1cm]{tps-experiments/shapes-robot/2-dot.jpg} &           \textbf{36.77 \%} \\
+% 3 &   \includegraphics[height=1cm]{tps-experiments/shapes-robot/3-dot.jpg} &         \textbf{  75.33 \%}
+% \\\rowcolor[HTML]{E0E0E0}
+% 4 &   \includegraphics[height=1cm]{tps-experiments/shapes-robot/4-dot.jpg} &           -44.59 \% 
+% \\
+% \midrule
+% % \hline 
+% \rowcolor[HTML]{FFC72C}
+% \bottomrule
+% % \hline
+% \end{tabular}
+\begin{tabular}{m{10mm}cccc}
+\hline
+% \rowcolor[HTML]{CBCEFB}
+%&Shape & Tensioning Method \\
+%\rowcolor[HTML]{CBCEFB}
+&  1 & 2 & 3 & 4 \\
+\midrule
+\cellcolor[HTML]{CBCEFB} Shape \vspace{10pt} & \includegraphics[height=1.2cm]{tps-experiments/shapes-robot/1-dot.jpg} & \includegraphics[height=1.2cm]{tps-experiments/shapes-robot/2-dot.jpg} &   \includegraphics[height=1.2cm]{tps-experiments/shapes-robot/3-dot.jpg} & \includegraphics[height=1.2cm]{tps-experiments/shapes-robot/4-dot.jpg} \\
+\cellcolor[HTML]{FFC72C} Deep RL & \textbf{118.63 \%}& \textbf{36.77 \%} & \textbf{  75.33 \%} &   -44.59 \\ 
+% \bottomrule
+% \midrule
+% \midrule
+% \hline 
+% \rowcolor[HTML]{FFC72C}
+\bottomrule
+% \hline
+\end{tabular}
+\tablabel{scores-dvrk}
+\vspace{-10pt}
+\end{table}

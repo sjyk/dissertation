@@ -12,7 +12,7 @@ While Deep RL research has made significant breakthroughs over the last several 
 There are several arguments for why this is the case including: (1) the algorithms are still not sample-efficient and struggle when querying the system is a bottleneck~\cite{sunderhauf2018limits, stoica2017berkeley}, (2) existing implementations are sensitive to hyper-parameters and generally difficult to reproduce~\cite{islam2017reproducibility, henderson2017deep}, (3) existing implementations are not significantly more efficient than random parameter-space search~\cite{mania2018simple, salimans2017evolution}, and (4) performance in the AlphaGo and Atari domains are not indicative of settings where there are imperfect observations~\cite{stoica2017berkeley, sunderhauf2018limits}.
 
 These criticisms focus on applying Deep RL in its purest form; where no \emph{a priori} information about valuable decision sequences is available to the agent.
-In contrast, classical algorithmic methods heavily exploit heuristics, prior knowledge about the system, and the structure of typical problems in the domain 
+In contrast, classical algorithmic methods heavily exploit heuristics, prior knowledge about the system, and the structure of typical problems in the domain.
 This poses an existential dilemma for Deep RL---either one sacrifices generality by incorporating domain knowledge into the Deep RL algorithm or one pays the price of essentially random behavior until a viable decision policy is found. Building and maintaining domain-specific Deep RL implementations defeats the unifying premise of Deep RL.
 
 This dissertation argues that general-purpose Deep RL implementations can be made to exploit many forms of domain-specific structure without algorithmic modification. In several domains of interest, a limited amount of expert knowledge is available, e.g., a human teleoperator can guide the motion of a robot or a classical search algorithm can be applied. 
@@ -57,7 +57,9 @@ Given an MDP and a set of demonstration trajectories $D = \{d_1,...,d_N\}$ from 
     
     \item I present a system for synthesizing data cleaning programs to enforce data base integrity constraints. The unique part of this system is that it self-supervises where an exhaustive search algorithm provides demonstrations to make itself incrementally less exhaustive (Chapter 4). 
     
-    \item Recognizing that Q-Learning is a form of approximate dynamic programming, I present results where we replace the classical SQL query optimizer with a Deep RL algorithm (Chapter 5). The algorithm is initialized with demonstrations from a classical dynamic programming optimizer.
+    \item I present a system for synthesizing surgical thin tissue tensioning policies using deep reinforcement learning. To improve the training time of the system, it initializes its search with an analytical approximation (Chapter 5). 
+    
+    \item Recognizing that Q-Learning is a form of approximate dynamic programming, I present results where we replace the classical SQL query optimizer with a Deep RL algorithm (Chapter 6). The algorithm is initialized with demonstrations from a classical dynamic programming optimizer.
     
 \end{enumerate}
 
