@@ -57,16 +57,15 @@ My work over the last 6 years explores this architecture in several Deep RL syst
 
      \emph{Krishnan, Sanjay, Eugene Wu, Michael Franklin, and Ken Goldberg. Alpha Clean: Data Cleaning with Distributed Tree Search and Learning. 2018.}
 
-    \item Recognizing that Q-Learning is a form of approximate dynamic programming, I present results where we replace the classical SQL query optimizer with a Deep RL algorithm (Chapter 5). The algorithm is initialized with demonstrations from a classical dynamic programming optimizer.
+    \item A new approximate dynamic programming framework for SQL query optimization. Classical query optimizers leverage dynamic programs for optimally nesting join queries. This process creates a table that memoizes cost-to-go estimates of intermediate subplans. By representing the memoization table with a neural network, the optimizer can estimate the cost-to-go of even previously unseen plans allowing for a vast expansion of the search space. I show that this process is a form of Deep Q-Learning where the state is a query graph and the actions are contractions on the query graph. One key result is that the same optimization algorithm can adaptively learn search strategies for both in-memory databases (where the search space is often heuristically restricted based to maximize index accesses) and disk-based databases (where the search space is often heuristically restricted to maximize re-use of intermediate results).
+
+    \emph{Krishnan, Sanjay, Zongheng Yang, Ion Stoica, Joseph Hellerstein, and Ken Goldberg. Learning to Efficiently Enumerate Joins with Deep Reinforcement Learning. 2018.}
     
-    \item I present a system for synthesizing surgical thin tissue tensioning policies using deep reinforcement learning. To improve the training time of the system, it initializes its search with an analytical approximation (Chapter 5). 
-    
-    
+    \item An application of deep reinforcement learning to synthesizing surgical thin tissue tensioning policies. To improve the search time, the algorithm initializes its search with an analytical approximation of the equilibrium state of a FEM simulator. The result is a search algorithm that searches for a policy over several hundred timesteps in less than a minute of latency (Chapter 6). 
+
+     \emph{Krishnan, Sanjay and Ken Goldberg. Sanjay Krishnan and Ken Goldberg. Bootstrapping Deep Reinforcement Learning of Surgical Tensioning with An Analytic Model. C4 Surgical Workshop 2017.}
     
 \end{enumerate}
-
-
-
 
 \vspace{0.75em} \noindent \textbf{Problem Setting: }
 A discrete-time discounted Markov Decision Process (MDP) is described by a 6-tuple $\langle \mathcal{S}, \mathcal{A}, p_0, p, R, \gamma \rangle$, where $\mathcal{S}$ denotes the state space, $\mathcal{A}$ the action space, $p_0$ the initial state distribution, $p(s_{t+1} \mid s_{t}, a_{t})$ the state transition distribution, $R(s_t, a_t) \in \mathbb{R}$ is the reward function, and $\gamma \in [0,1)$ the discount factor. 
