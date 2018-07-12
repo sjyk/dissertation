@@ -1,6 +1,5 @@
 \setcounter{secnumdepth}{0}
-\chapter{Preliminaries}
-\section{Introduction}
+\chapter{Introduction}
 Bellman's ``Principle of Optimality'' and the characterization of dynamic programming is one of the most important results in computing~\cite{bellman2013dynamic}. Its importance stems from the ubiquity of Markovian decision processes (MDPs), which formalize a wide range of problems from path planning to scheduling~\cite{howard1966dynamic}. In the most abstract form, there is an agent who makes a sequence of decisions to effect change on a system that processes these decisions and updates its internal state possibly in non-deterministically. 
 The process is ``Markovian'' in the sense that the system's current state completely determines its future progression. As an example of an MDP, one might have to plan a sequence of motor commands to a robot to control it to a target position. Or, one might have to schedule a sequence of cluster computing tasks while avoiding double scheduling on a node. 
 The solution to a MDP is a decision making policy; the optimal decision to make given any current state of the system. 
@@ -70,11 +69,11 @@ My work over the last 6 years explores this architecture in several Deep RL syst
 \vspace{0.75em} \noindent \textbf{Problem Setting: }
 A discrete-time discounted Markov Decision Process (MDP) is described by a 6-tuple $\langle \mathcal{S}, \mathcal{A}, p_0, p, R, \gamma \rangle$, where $\mathcal{S}$ denotes the state space, $\mathcal{A}$ the action space, $p_0$ the initial state distribution, $p(s_{t+1} \mid s_{t}, a_{t})$ the state transition distribution, $R(s_t, a_t) \in \mathbb{R}$ is the reward function, and $\gamma \in [0,1)$ the discount factor. 
 The objective of an MDP is to find a decision policy, a probability distribution over actions $\pi: \mathcal{S} \mapsto \Delta(A)$.
-A policy $\pi$ induces the distribution over trajectories:
+A policy $\pi$ induces the distribution over trajectories $\xi = [(s_0,a_0),(s_1,a_1),...,(s_N,a_N)]$:
 \[
 P_\pi(\xi) = p_0(x_0) \prod_{t=0}^{T-1} \pi(a_t \mid s_t) p(s_{t+1} \mid s_{t}, a_{t}).
 \]
-The \emph{return} of a policy is its expected total discounted reward over trajectories
+The \emph{value} of a policy is its expected total discounted reward over trajectories
 \[
 V_\pi = \mathbf{E}_{\xi \sim P_\pi}\left[\sum_{t=0}^{T-1} \gamma^t R(s_t,a_t)\right].
 \]
@@ -83,13 +82,20 @@ The objective is to find a policy in a class of allowed policies $\pi^* \in \Pi$
 \pi^* = \arg \max_{\pi \in \Pi} V_\pi 
 \label{eq:main}
 \end{equation}
-We assume access to an expert who samples from an unknown policy $\hat{\pi} \approx \pi^*$ the optimal policy; these samples are called demonstrations. A demonstration $d$ is a sequence of tuples of states, actions, and rewards:
+The reinforcement learning setting further assumes ``black box'' access to the state transition distribution and the reward function.
+This means the optimization algorithm is only allowed queries of the following form:
+\[
+q_t: s_t, a_t \rightarrow \textsf{system()} \rightarrow s_{t+1}, r_{t}
+\]
+The number of such queries issued by an RL algorithm is called its sample-complexity. 
+The focus of this dissertation is on cases where \emph{ab initio} RL has a prohibitive sample complexity due to high-dimensional action spaces or long time horizons.
+We assume access to an oracular supervisor who samples from an unknown policy $\hat{\pi} \approx \pi^*$ the optimal policy; these samples are called demonstrations. A demonstration $d$ is a sequence of tuples of states, actions, and rewards:
 \[d = [(s_0,a_0,r_0),(s_1,a_1,r_1),...,(s_T,a_T,r_2)]\]
 
 \vspace{0.25em}
 
 \begin{problem}[Reinforcement Learning with Demonstrations]
-Given an MDP and a set of demonstration trajectories $D = \{d_1,...,d_N\}$ from a supervisor, return a policy $\pi^*$ that maximizes the cumulative return of the MDP.
+Given an MDP and a set of demonstration trajectories $D = \{d_1,...,d_N\}$ from a supervisor, return a policy $\pi^*$ that maximizes the cumulative reward of the MDP with a reinforcement learning algorithm.
 \end{problem}
 
 
