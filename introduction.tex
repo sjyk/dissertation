@@ -6,9 +6,9 @@ The solution to a MDP is a decision making policy; the optimal decision to make 
 
 Since the MDP framework is extremely general---it encompasses shortest-path graph search, supervised machine learning, and optimal control---the difficulty in solving a particular MDP relates to what assumptions can be made about the system.
 A setting of interest is when one only assumes black-box access to the system, where no parametric model of the system is available and the agent must iteratively query the system to optimize its decision policy.
-This setting, also called \emph{reinforcement learning} (RL), is interesting for a few reasons.
+This setting, also called \emph{reinforcement learning}~\cite{sutton1998reinforcement}, is interesting for a few reasons.
 First, there are many dynamical problems for which a closed-form analytical description of a system's behavior is not available but one has a programatic approximation of how the system transitions (i.e., simulation).
-RL allows for direct optimization of decision policies over such simulated systems.
+Reinforcement Learning (RL) allows for direct optimization of decision policies over such simulated systems.
 Next, by virtue of the minimal assumptions, RL algorithms are extremely general and widely applicable across many different problem settings.
 From a Software Engineering perspective, this unification allows the research community to develop a small number of optimized libraries for RL rather each domain designing/maintaining problem-specific algorithms.
 Over the last few years, the combination deep neural networks and reinforcement learning, or Deep RL, have emerged as in robotics, AI, and machine learning as an important area of research~\cite{mnih2015human,silver2017mastering, sunderhauf2018limits, stoica2017berkeley}.
@@ -65,42 +65,6 @@ My work over the last 6 years explores this architecture in several Deep RL syst
      \emph{Krishnan, Sanjay and Ken Goldberg. Sanjay Krishnan and Ken Goldberg. Bootstrapping Deep Reinforcement Learning of Surgical Tensioning with An Analytic Model. C4 Surgical Workshop 2017.}
     
 \end{enumerate}
-
-\vspace{0.75em} \noindent \textbf{Problem Setting: }
-A discrete-time discounted Markov Decision Process (MDP) is described by a 6-tuple $\langle \mathcal{S}, \mathcal{A}, p_0, p, R, \gamma \rangle$, where $\mathcal{S}$ denotes the state space, $\mathcal{A}$ the action space, $p_0$ the initial state distribution, $p(s_{t+1} \mid s_{t}, a_{t})$ the state transition distribution, $R(s_t, a_t) \in \mathbb{R}$ is the reward function, and $\gamma \in [0,1)$ the discount factor. 
-The objective of an MDP is to find a decision policy, a probability distribution over actions $\pi: \mathcal{S} \mapsto \Delta(A)$.
-A policy $\pi$ induces the distribution over trajectories $\xi = [(s_0,a_0),(s_1,a_1),...,(s_N,a_N)]$:
-\[
-P_\pi(\xi) = p_0(x_0) \prod_{t=0}^{T-1} \pi(a_t \mid s_t) p(s_{t+1} \mid s_{t}, a_{t}).
-\]
-The \emph{value} of a policy is its expected total discounted reward over trajectories
-\[
-V_\pi = \mathbf{E}_{\xi \sim P_\pi}\left[\sum_{t=0}^{T-1} \gamma^t R(s_t,a_t)\right].
-\]
-The objective is to find a policy in a class of allowed policies $\pi^* \in \Pi$ to maximize the return:
-\begin{equation}
-\pi^* = \arg \max_{\pi \in \Pi} V_\pi 
-\label{eq:main}
-\end{equation}
-The reinforcement learning setting further assumes ``black box'' access to the state transition distribution and the reward function.
-This means the optimization algorithm is only allowed queries of the following form:
-\[
-q_t: s_t, a_t \rightarrow \textsf{system()} \rightarrow s_{t+1}, r_{t}
-\]
-The number of such queries issued by an RL algorithm is called its sample-complexity. 
-The focus of this dissertation is on cases where \emph{ab initio} RL has a prohibitive sample complexity due to high-dimensional action spaces or long time horizons.
-We assume access to an oracular supervisor who samples from an unknown policy $\hat{\pi} \approx \pi^*$ the optimal policy; these samples are called demonstrations. A demonstration $d$ is a sequence of tuples of states, actions, and rewards:
-\[d = [(s_0,a_0,r_0),(s_1,a_1,r_1),...,(s_T,a_T,r_2)]\]
-
-\vspace{0.25em}
-
-\begin{problem}[Reinforcement Learning with Demonstrations]
-Given an MDP and a set of demonstration trajectories $D = \{d_1,...,d_N\}$ from a supervisor, return a policy $\pi^*$ that maximizes the cumulative reward of the MDP with a reinforcement learning algorithm.
-\end{problem}
-
-
-
-
 
 
 
