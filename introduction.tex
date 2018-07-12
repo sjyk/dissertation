@@ -1,34 +1,71 @@
 \setcounter{secnumdepth}{0}
 \chapter{Preliminaries}
 \section{Introduction}
-Bellman's ``Principle of Optimality'' and the characterization of dynamic programming is one of the most important results in computing~\cite{bellman2013dynamic}. Its importance stems from the ubiquity of Markovian decision processes (MDPs), which formalize a wide range of problems from path planning to scheduling~\cite{howard1966dynamic}. In the most abstract form, there is an agent who makes a sequence of decisions to effect change on a system that processes these decisions and updates its internal state. 
+Bellman's ``Principle of Optimality'' and the characterization of dynamic programming is one of the most important results in computing~\cite{bellman2013dynamic}. Its importance stems from the ubiquity of Markovian decision processes (MDPs), which formalize a wide range of problems from path planning to scheduling~\cite{howard1966dynamic}. In the most abstract form, there is an agent who makes a sequence of decisions to effect change on a system that processes these decisions and updates its internal state possibly in non-deterministically. 
 The process is ``Markovian'' in the sense that the system's current state completely determines its future progression. As an example of an MDP, one might have to plan a sequence of motor commands to a robot to control it to a target position. Or, one might have to schedule a sequence of cluster computing tasks while avoiding double scheduling on a node. 
-The solution to a MDP is a decision making policy---the optimal decision to make given any current state of the system. 
+The solution to a MDP is a decision making policy; the optimal decision to make given any current state of the system. 
 
+Since the MDP framework is extremely general---it encompasses shortest-path graph search, supervised machine learning, and optimal control---the difficulty in solving a particular MDP relates to what assumptions can be made about the system.
+A setting of interest is when one only assumes black-box access to the system, where no parametric model of the system is available and the agent must iteratively query the system to optimize its decision policy.
+This setting, also called \emph{reinforcement learning} (RL), is interesting for a few reasons.
+First, there are many dynamical problems for which a closed-form analytical description of a system's behavior is not available but one has a programatic approximation of how the system transitions (i.e., simulation).
+RL allows for direct optimization of decision policies over such simulated systems.
+Next, by virtue of the minimal assumptions, RL algorithms are extremely general and widely applicable across many different problem settings.
+From a Software Engineering perspective, this unification allows the research community to develop a small number of optimized libraries for RL rather each domain designing/maintaining problem-specific algorithms.
+Over the last few years, the combination deep neural networks and reinforcement learning, or Deep RL, have emerged as in robotics, AI, and machine learning as an important area of research~\cite{mnih2015human,silver2017mastering, sunderhauf2018limits, stoica2017berkeley}.
+Deep RL correlates features of states to successful decisions using neural networks. 
 
+Due to the nature of these black-box queries, RL can be very inefficient in problems where the decision space is high-dimensional and when the decision horizon (the length of the sequence of decisions the agent needs to make) is very long. 
+The algorithm has to simultaneously correlate features that are valuable for making a decision in a state while also searching through the space of decisions to figure out which sequence of decisions are valuable. A failure to learn means that the algorithm cannot intelligently search the space of decisions, and a failure to find promising sequences early means that the algorithm cannot learn.
+This creates a fundementally unstable algorithm setting, where the hope is the algorithm discovers good decision sequences by chance and can bootstrap from these relatively rare examples.
+The higher the dimensionality of the problem, the less likely purely random search will be successful. 
 
+Since Deep RL suffers such limitations, how do practioners solve such large scale ``black-box'' problems today (with non-Deep RL methods)? Every domain has pragmatic approximation algorithms that exploit heuristics, domain knowledge, and other known structure of typical solutions in the problem domain. Consider the following examples:
 
-Unfortunately, finding optimal solutions to general MDP problems is often computationally impractical. 
+\begin{example}[SQL Query Optimization]
+Most relational database management systems support only dyadic join operations (joining two tables) as primitive operations, a query optimizer must choose the ``best'' sequence of two-way joins to achieve the k-way join of tables requested by a query. The exhaustive decision space is super exponential in k. Since it is common for data to be organized in one large table with several smaller reference tables and typical cost functions are linear in the size of the input tables, most query optimization algorithms restrict their search to left-deep plans.
+\end{example}
 
+\begin{example}[Robot Task and Motion Planning]
+Planning collision free motions of a robot to meet a control objective is exponential in the time-horizon. Long-term tasks are decomposed into shorter nearly independently solvable planning subtasks. This reduces the effective planning horizon and allows the robot to reuse plans if a subtask is repeated.
+\end{example}
 
+Exploiting such structure in Deep RL poses a dilemma---either one sacrifices generality by incorporating problem-specific knowledge into the Deep RL algorithm or one pays the price of exploring an immense search space. Building and maintaining domain-specific Deep RL implementations defeats the unifying premise of Deep RL.
 
-
-
-Over the last few years, approximations based on the combination deep neural networks and reinforcement learning, or Deep RL, have emerged as a pragmatic solution~\cite{mnih2015human,silver2017mastering}. Deep RL only assumes black-box access to the system model, and relies on iteratively querying the model to optimize its decision polices. This allows the Deep RL family of algorithms to be extremely general and widely applicable across many different problem settings. More importantly, there are reductions to optimal control, classical graph search, and supervised learning. The impact of general-purpose Deep RL algorithms cannot be understated; they promise a unified approach to many planning, control, and learning problems. 
-From a Software Engineering perspective, this unification allows the community to develop optimized libraries for Deep RL rather each domain designing/maintaining problem-specific algorithms.
-
-However, practical progress in Deep RL has been significantly slower. 
-While Deep RL research has made significant breakthroughs over the last several years, there has been a notable lack industrial production applications outside of the canonical academic benchmark simulators (e.g., with few exceptions \cite{mirhoseini2017device}). 
-There are several arguments for why this is the case including: (1) the algorithms are still not sample-efficient and struggle when querying the system is a bottleneck~\cite{sunderhauf2018limits, stoica2017berkeley}, (2) existing implementations are sensitive to hyper-parameters and generally difficult to reproduce~\cite{islam2017reproducibility, henderson2017deep}, (3) existing implementations are not significantly more efficient than random parameter-space search~\cite{mania2018simple, salimans2017evolution}, and (4) performance in the AlphaGo and Atari domains are not indicative of settings where there are imperfect observations~\cite{stoica2017berkeley, sunderhauf2018limits}.
-
-These criticisms focus on applying Deep RL in its purest form; where no \emph{a priori} information about valuable decision sequences is available to the agent.
-In contrast, classical algorithmic methods heavily exploit heuristics, prior knowledge about the system, and the structure of typical problems in the domain.
-This poses an existential dilemma for Deep RL---either one sacrifices generality by incorporating domain knowledge into the Deep RL algorithm or one pays the price of essentially random behavior until a viable decision policy is found. Building and maintaining domain-specific Deep RL implementations defeats the unifying premise of Deep RL.
-
-This dissertation argues that general-purpose Deep RL implementations can be made to exploit many forms of domain-specific structure without algorithmic modification. In several domains of interest, a limited amount of expert knowledge is available, e.g., a human teleoperator can guide the motion of a robot or a classical search algorithm can be applied. 
-My thesis is that \emph{it is possible to learn important structural features of a sequential prediction task from such expert data to significantly improve the sample-efficiency, stability, and applicability of Deep RL.} 
+In several domains of interest, a limited amount of expert knowledge is available, e.g., a human teleoperator can guide the motion of a robot to show an example solution of one problem instance.
+Collecting such ``demonstrations'' to exhaustively learn a solution for possible progressions on MDP can be very challenging (called imitation learning~\cite{osa2018algorithmic}), but we might have sufficient data to find important structural features of a search problem including task decomposition, subspaces of actions that are irrelevant to the task, and the structure of the cost function.
+My thesis is that \emph{learning such structure can significantly improve the sample-efficiency, stability, and robustness of Deep RL in high-dimensional and long-horizon search problems.} 
 With this additional supervision, the search process can be restricted to those sequences that are similar to the supervision provided by the expert.
 My work over the last 6 years explores this architecture in several Deep RL systems for control of imprecise cable-driven surgical robots, automatically synthesizing data-cleaning programs to meet quality specifications, and generating efficient execution plans for relational queries. I describe algorithmic contributions, theoretical analysis about the implementations themselves, and the architecture of the RL systems.
+
+\vspace{0.75em} \noindent \textbf{Contributions: }  This dissertation contributes:
+
+\begin{enumerate}
+    \item Deep Discovery of Options (DDO): A new bayesian learning framework for learning parametrized control hierarchies from expert data (Chapter 2). DDO infers the parameters of an Abstract HMM model to decomposes the action space into a hierarchy of discrete skills relevant to a task. I show that the hierarchical model represents policies more efficiently (requires less data to learn) than a flat model on real and simulated robot control tasks. I also show that this hierarchy can be used to guide exploration in search problems through compositions of the discrete skills seen in the data rather than arbitrary sequences of actions. I apply this model to significantly accelerate learning in self-play of Atari games.
+
+    \emph{Krishnan, Sanjay, Roy Fox, Ion Stoica, and Ken Goldberg. DDDO: Discovery of Deep Continuous Options for Robot Learning from Demonstrations. Proceeding of Machine Learning Research: Conference on Robot Learning. 2017.} 
+    
+    \item Sequential Windowed Inverse Reinforcement Learning (SWIRL): A learning framework for approximating an MDP with a sequence of shorter horizon MDPs with quadratic cost functions (Chapter 3). SWIRL can be thought of as a special parametric case of DDO where skills terminate at goal states. I show on two surgical robot control tasks, cutting along a line and tensioning fabric, SWIRL significantly reduces the policy search time of a Q-Learning algorithm. I also demonstrate improvements in a robot planning task (parallel parking a car with noisy dynamics) and classical control problems (controlling a two-link pendulum).
+
+    \emph{Krishnan, Sanjay, Animesh Garg, Richard Liaw, Brijen Thananjeyan, Lauren Miller, Florian T. Pokorny, and Ken Goldberg. SWIRL: A Sequential Windowed Inverse Reinforcement Learning Algorithm for Robot Tasks with Delayed Rewards. International Journal of Robotics Research. 2018.}
+
+    \item Transition State Clustering (TSC): The underlying task decomposition algorithm in SWIRL is a Bayesian clustering framework called TSC (Chapter 3). This model correlates spatial and temporal features with changes in motion of the demonstrator. The crucial advantage of this framework is that it can exploit ``third person'' demonstrations data where only the states of the MDP are visible but not the decisions the expert took. The motivating application is learning from expert surgeons by analyzing data from a surgical robot. I show that TSC is more robust to spatial and temporal variation compared to other segmentation methods and can apply to both kinematic and visual demonstration data.
+
+    \emph{Krishnan, Sanjay, Animesh Garg, Sachin Patil, Colin Lea, Gregory Hager, Pieter Abbeel, and Ken Goldberg. Transition State Clustering: Unsupervised surgical trajectory segmentation for robot learning. International Journal of Robotics Research. 2018.}
+
+    \item Alpha Clean: A system for synthesizing data cleaning programs to enforce database integrity constraints (Chapter 4). The main algorithm in the system decomposes the integrity constraints on a table into a collection of independent search problems called blocks. The algorithm starts by exhaustively searching the initial blocks and then incrementally learns a Q-function to make the search on future increasingly precise. This process leverages the fact that data cleaning is not an arbitrary constraint satisfaction problem and most database corruption is systematic, i.e., correlated with features of the data. 
+
+     \emph{Krishnan, Sanjay, Eugene Wu, Michael Franklin, and Ken Goldberg. Alpha Clean: Data Cleaning with Distributed Tree Search and Learning. 2018.}
+
+    \item Recognizing that Q-Learning is a form of approximate dynamic programming, I present results where we replace the classical SQL query optimizer with a Deep RL algorithm (Chapter 5). The algorithm is initialized with demonstrations from a classical dynamic programming optimizer.
+    
+    \item I present a system for synthesizing surgical thin tissue tensioning policies using deep reinforcement learning. To improve the training time of the system, it initializes its search with an analytical approximation (Chapter 5). 
+    
+    
+    
+\end{enumerate}
+
+
 
 
 \vspace{0.75em} \noindent \textbf{Problem Setting: }
@@ -57,21 +94,6 @@ Given an MDP and a set of demonstration trajectories $D = \{d_1,...,d_N\}$ from 
 \end{problem}
 
 
-\vspace{0.75em} \noindent \textbf{Contributions: }  This dissertation consists of algorithmic, theory, and systems contributions and are summarized below:
-
-
-\begin{enumerate}
-    \item I present a new learning framework for learning parametrized control hierarchies from expert data (Chapter 2). This decomposes the action space into a discrete set of skills relevant to the task. New problem instances search over compositions of the discrete skills rather than arbitrary sequences of actions. The motivating application is a system for multi-step robot manipulation.
-    
-    \item I present a variant of this framework for exploiting ``third person'' demonstrations data in reinforcement learning where only the states that the agent visits are visible (Chapter 3). The motivating application is learning from expert surgeons in surgical robotics.
-    
-    \item I present a system for synthesizing data cleaning programs to enforce data base integrity constraints. The unique part of this system is that it self-supervises where an exhaustive search algorithm provides demonstrations to make itself incrementally less exhaustive (Chapter 4). 
-    
-    \item I present a system for synthesizing surgical thin tissue tensioning policies using deep reinforcement learning. To improve the training time of the system, it initializes its search with an analytical approximation (Chapter 5). 
-    
-    \item Recognizing that Q-Learning is a form of approximate dynamic programming, I present results where we replace the classical SQL query optimizer with a Deep RL algorithm (Chapter 6). The algorithm is initialized with demonstrations from a classical dynamic programming optimizer.
-    
-\end{enumerate}
 
 
 
