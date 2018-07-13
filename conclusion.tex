@@ -24,19 +24,17 @@ For example, one could imagine a Deep Q-Learning learning algorithm which rather
 This would simulate some level of backtracking behavior in the algorithm.
 Optimizing the initialization process over a collection of tasks would be very valuable.
 
+\subsection*{Distance Assumptions}
+Another crucial assumption exploited in many discrete search settings is \emph{a priori} knowledge of distance between states. For example, the A* search algorithm uses this to prioritize expansion with an admissible heuristic that lower bounds the cost-to-go.
+This is functionally equivalent to a lower bound on the Q-function in RL.
+An interesting problem is techniques to learn such lower bounds and transfer them between problems.
+For example, are there ways to distill a Q network into a simpler model that simply provides a lower approximation and share that with other search problem instances.
+
 \subsection*{Demonstration Assumptions}
 State-action sequences are the most basic form of supervision from an expert. 
 A more advanced expert may be able to provide much more information such as task segments, hierarchical information, and perhaps even hints to the learner. 
 Thinking about how to formalize the notion of hints from the supervisor is another interesting research direction.
 What if the supervisor could give a partially written program to the describe the control policy and the search algorithm could fill in the gaps?
 There are interesting questions of how we represent partial or incomplete knowledge in a framework like RL.
-
-\subsection*{Distance Assumptions}
-
-\subsection*{Implementation Assumptions}
-All existing RL frameworks assume discrete time control. However, in real software systems, decisions are made at actual points of time with possibly varying latencies. 
-These problems are exacerbated when policies are queried over networks.
-RL systems have to be robust to the staleness of their decisions.
-There are a number of interesting research questions surrounding timing concerns when evaluating policies, training the policies in ways that they hedge against being executed late, and building inference engines that can apply stop gap actions when a policy is slow to evaluate.
 
 

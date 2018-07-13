@@ -87,17 +87,17 @@ Further, suppose in step one of the task the demonstrator's actions are perfectl
 Thus, $\Psi$ will respectively penalize deviation from $\mu_{i}[j]$ more in step one than in step two.
 
 
-\begin{algorithmic}[t]
+\begin{algorithm}[t]
 \small
 \caption{Reward Inference \label{alg:tsh2}}
-\KwData{Demonstration $\mathcal{D}$ and sub-goals $[\rho_1,...,\rho_k]$}
+\KwData{Input: Demonstration $\mathcal{D}$ and sub-goals $[\rho_1,...,\rho_k]$}
 
-Based on the transition states, segment each demonstration $d_i$ into $k$ sub-sequences where the $j^{th}$ is denoted by $d_i[j]$.
+Segment each demonstration $d_i$ into $k$ sub-sequences where the $j^{th}$ is denoted by $d_i[j]$.
 
 Apply Equation \ref{localq} to each set of sub-sequences $1...k$.
 
-\KwResult{$\mathbf{R}_{seq}$}
-\end{algorithmic}
+\KwResult{Return: $\mathbf{R}_{seq}$}
+\end{algorithm}
 
 
 
@@ -142,33 +142,7 @@ Q(s,a,v) = R_v(s,a) + \arg \max_{a} Q(s',a, v')
 \]
 We also need to define an exploration policy, i.e., a stochastic policy with which we will collect rollouts. To initialize the Q-Learning, we apply Behavioral Cloning locally for each of the segments to get a policy $\pi_i$. We apply an $\epsilon$-greedy version of these policies to collect rollouts.
 
-\begin{algorithmic}[t]
-\small
-\caption{Q-Learning With Segments \label{alg:tsh3}}
-\KwData{Transition States $G$, Reward Sequence $\mathbf{R}_{seq}$, exploration policy $\pi$}
-
-Initialize $Q(\binom{s}{v},a)$ randomly
-
-\ForEach{$iter \in 0,...,I$}{
-    Draw $s_0$ from initial conditions
-    
-    Initialize $v$ to be $[0,...,0]$
-    
-    Initialize $j$ to be $1$
-    
-    \ForEach{$t \in 0,...,T$}{
-        Choose action $a$ based on $\pi$.
-        
-        Observe Reward $R_{j}$
-        
-        Update state to $s'$ and $Q$ via Q-Learning update
-        
-        If $s'$ is $\in  \rho_{j}$ update $v[j] = 1$ and $j = j +1$
-    }
-}
-
-\KwResult{Policy $\pi$}
-\end{algorithmic}
+\includegraphics[width=0.8\linewidth]{swirl-experiments/swirl-alg.png}
 
 \subsection{Simulated Experiments}
 We constructed a parallel parking scenario for a robot car with non-holonomic dynamics and two obstacles (Figure \ref{domains}a), and we also experimented on the standard acrobot domain (Figure \ref{domains}b).
@@ -419,9 +393,9 @@ This indicates that in real tasks the initialization is crucial.
 \scriptsize
 \caption{Results from the deformable sheet tensioning experiment}
 \label{my-label}
-\begin{tabular}{llll}
-\rowcolor[HTML]{000000} 
-{\color[HTML]{FFFFFF} Technique} & {\color[HTML]{FFFFFF} \# Demonstrations} & {\color[HTML]{FFFFFF} \# Rollouts} & {\color[HTML]{FFFFFF} Value} \\
+\begin{tabular}{l|l|l|l}
+{Technique} & { \# Demonstrations} & { \# Rollouts} & {Value} \\
+\hline
 Pure Exploration (RL)                   & -                                        & 100                                & -8210                        \\
 Pure Demonstration  (BC)                            & 15                                       & -                                  & -7591                        \\
 Segmented Demos.                  & 15                                       & -                                  & -3516                        \\
@@ -485,17 +459,13 @@ Out of the 15 trials, 11 were successful.
     \resizebox{\linewidth}{!}{% put in textwidth
     \begin{tabular}{c||c|c|c|c}
     \hline
-    \rowcolor[HTML]{CBCEFB} 
     Curvature Radius (cm) & SVM Pos. Error (cm) & SVM Tracking Error (cm) & \hirl Pos. Error (cm) & \hirl Tracking Error (cm) \\
      \hline \hline
     straight & 0.46 & 0.23 & 0.42 & 0.21  \\
-    \rowcolor[HTML]{E0E0E0} 
     4.0 & 0.43 & 0.59 & 0.45 & 0.33 \\
     3.5 & 0.51 & 1.21 & 0.56 & 0.38 \\
-    \rowcolor[HTML]{E0E0E0} 
     3.0 & 0.86 & 3.03 & 0.66 & 0.57 \\
-    2.5 & 1.43 & {\color{red}-} & 0.74 & 0.87 \\
-    \rowcolor[HTML]{E0E0E0} 
+    2.5 & 1.43 & {-} & 0.74 & 0.87 \\
     2.0 & - & - & 0.87 & 1.45 \\
     1.5 & - & - & 1.12 & 2.44 \\
      \hline

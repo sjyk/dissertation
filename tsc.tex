@@ -1,4 +1,5 @@
-\chapter{Sequential Windowed Inverse Reinforcement Learning: Learning Reward Abstractions}
+\chapter{Sequential Windowed Inverse Reinforcement Learning: Learning Reward Decomposition From Data}
+\chaptermark{SWIRL}
 In the previous chapter, I considered a model where sequences of state-action tuples from an expert demonstrator were available.
 Next, we consider a setting where only the state sequence is observed.
 This can happen when the demonstration modality differs from the execution setting, e.g., learning from third person videos, motion capture of a human doing a task, or kinesthetic demonstrations. 
@@ -822,55 +823,14 @@ While this is largely anecdotal evidence, we were able to find some explanations
 \end{figure}
 
 
-\begin{table}[ht!]
-    %\vspace{-10pt}
-    \centering
-    \caption{Comparison of \tsc performance on Suturing and Needle Passing Tasks. We compare the prediction performance by incrementally adding demonstrations from Experts~(E), Intermediates~(I), and Novices~(N) respectively to the dataset.\label{tab:jigsaws}}
-    \resizebox{\linewidth}{!}{% put in textwidth
-        \begin{tabular}{ll|l|l|l}
-        \\ \hline 
-        \multicolumn{2}{c|}{}    & \multicolumn{1}{c|}{Kin} & \multicolumn{1}{c|}{Vid} & \multicolumn{1}{c}{Kin+Vid} \\ \hline \hline
-        \multicolumn{5}{l}{Silhouette Score -- Intrinsic Evaluation} \\
-        
-                & E+I+N & 0.518$\pm$0.008  &  0.576$\pm$0.018  &  0.733$\pm$0.056\\ 
-        
-                                         & E+I   & 0.550$\pm$0.014  &  0.548$\pm$0.015  &  0.716$\pm$0.046\\
-        
-        \multirow{-3}{*}{ Suturing}                             & E     & 0.630$\pm$0.014  &  0.515$\pm$0.021  &  0.654$\pm$0.065\\
-                                      & E+I+N & 0.513$\pm$0.007  &  0.552$\pm$0.011  &  0.557$\pm$0.010\\
-        
-                                         & E+I   & 0.521$\pm$0.006  &  0.536$\pm$0.013  &  0.666$\pm$0.067\\
-        
-        
-        \rowcolor[HTML]{E0E0E0}
-        \parbox{1.2cm}{Needle Passing}} & E     & 0.524$\pm$0.004  &  0.609$\pm$0.010  &  0.716$\pm$0.097\\
-        \hline \hline
-        
-        \multicolumn{5}{l}{NMI Score -- Extrinsic evaluation against manual labels} \\ 
-        
-        
-                                         & E+I+N & 0.307 $\pm$ 0.045 &  0.157 $\pm$ 0.022  & 0.625 $\pm $ 0.034 \\
-       
-        
-        
-                                         & E+I   & 0.427 $\pm$ 0.053 & 0.166 $\pm$ 0.057   & 0.646 $\pm$ 0.039 \\ 
-        
-        
-        \multirow{-3}{*}{Suturing}       & E     &0.516 $\pm$ 0.026 &    0.266 $\pm$ 0.025 &     0.597 $\pm$ 0.096  \\ 
-        
 
-                                            & E+I+N & 0.272 $\pm$ 0.035 &  0.186 $\pm$ 0.034  & 0.385 $\pm$ 0.092 \\ 
-        
-                                         & E+I   & 0.285 $\pm$ 0.051 & 0.150 $\pm$ 0.048 & 0.471 $\pm$ 0.023  \\ 
-        
-        
-        
-        \multirow{-3}{*}{\parbox{1.2cm}{Needle Passing}} & E     & 0.287 $\pm$ 0.043& 0.222 $\pm$ 0.029& 0.565 $\pm$ 0.037 \\ \hline
-        \end{tabular}
-    }
-    \par\vspace{0pt}
-    % \vspace{-10pt}
-\end{table}
+\begin{figure}[!ht]
+%\vspace{-10pt}
+    \centering    
+    \caption{Comparison of \tsc performance on Suturing and Needle Passing Tasks. We compare the prediction performance by incrementally adding demonstrations from Experts~(E), Intermediates~(I), and Novices~(N) respectively to the dataset.\label{tab:jigsaws}}
+    \includegraphics[width=0.8\linewidth]{tsc-experiments/tsc-table.png}}
+% \vspace{-15pt}
+\end{figure}
 
 
 \vspace{0.25em}
@@ -915,7 +875,7 @@ For such a task, it may be better to segment each of the arms independently.
 In our next experiment, we explore segmenting a multi-step assembly task using (1) large \textit{Lego} blocks and (2) toy \textit{Plane} from the YCB dataset~\cite{calli2015corr}. 
 We demonstrate that \tsc applies generally outside of surgical robotics.
 We collect eight kinesthetic demonstrations for each task through kinesthetic demonstrations of the task on the PR2 robot.
-\figref{pr2_toyplane} illustrates the segmentation for the plane assembly task.
+Figure \ref{pr2toyplane} illustrates the segmentation for the plane assembly task.
 We find the plane assembly task using kinematics or vision alone results in a large number of segments.
 The combination can help remove spurious segments restricting our segments to those transitions that occur in most of the demonstrations--agreeing in similarity both kinematically and visually.
 
@@ -927,8 +887,7 @@ The combination can help remove spurious segments restricting our segments to th
 8 human demonstrations (bottom).
 No kinematics were available for the human demonstrations.
 We illustrate the segmentation for an example demonstration of each.
-Our manual annotation of the task has five steps and \tsc recovers this structure separately for both Kinesthetic demos on PR2 and Human demos with the same visual features. \figlabel{pr2_toyplane}}
-\vspace{-20pt}
+Our manual annotation of the task has five steps and \tsc recovers this structure separately for both Kinesthetic demos on PR2 and Human demos with the same visual features. \label{pr2toyplane}}
 \end{figure}
 
 % \subsubsection{Human Demonstration of Toy Plane Assembly}
@@ -955,17 +914,13 @@ We omit a visualization of the results for the Lego assembly. However, we summar
         \multicolumn{1}{c|}{}& \multicolumn{1}{c|}{K} & \multicolumn{1}{c|}{Z} & \multicolumn{1}{c}{K+Z} \\ \hline \hline 
         \multicolumn{4}{l}{Silhouette Score -- Intrinsic Evaluation}  \\
         Lego (Robot)    & 0.653$\pm$0.003 & 0.644$\pm$0.026 & 0.662$\pm$0.053 \\
-        \rowcolor[HTML]{E0E0E0}
          Plane (Robot)   & 0.741$\pm$0.011 & 0.649$\pm$0.007 & 0.771$\pm$0.067 \\
         Plane (Human 1) & -- & 0.601 $\pm$0.010  & -- \\ 
-        \rowcolor[HTML]{E0E0E0}
         Plane (Human 2) & -- & 0.628 $\pm$0.015  & -- \\ \hline \hline
-        \multicolumn{4}{l}{\cellcolor[HTML]{FFC72C}NMI Score -- Extrinsic evaluation against manual labels}  \\ 
+        \multicolumn{4}{l}{NMI Score -- Extrinsic evaluation against manual labels}  \\ 
         Lego (Robot)    & 0.542 $\pm$ 0.058  & 0.712 $\pm$ 0.041  & 0.688 $\pm$ 0.037  \\
-        \rowcolor[HTML]{E0E0E0}
          Plane (Robot)   & 0.768 $\pm$ 0.015  & 0.726 $\pm$ 0.040  & 0.747 $\pm$ 0.016    \\ 
         Plane (Human 1) & -- & 0.726 $\pm$ 0.071  & -- \\ 
-        \rowcolor[HTML]{E0E0E0}
         Plane (Human 2) & -- & 0.806 $\pm$ 0.034  & -- \\ \hline
     \end{tabular} 
     }
