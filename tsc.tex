@@ -1,4 +1,4 @@
-\chapter{Learning Reward Abstractions in Reinforcement Learning}
+\chapter{Sequential Windowed Inverse Reinforcement Learning: Learning Reward Abstractions}
 In the previous chapter, I considered a model where sequences of state-action tuples from an expert demonstrator were available.
 Next, we consider a setting where only the state sequence is observed.
 This can happen when the demonstration modality differs from the execution setting, e.g., learning from third person videos, motion capture of a human doing a task, or kinesthetic demonstrations. 
@@ -11,7 +11,6 @@ Explicitly modeling the system dynamics can require learning a large number of p
 This makes a direct system identification approach somewhat sensitive to any noise in the dataset, especially when the datasets are small. 
 Furthermore, the states are often high-dimensional with combinations of kinematic and visual features.
 
-\subsection*{Intuition}
 Suppose, one could decompose a surgical task into a consistent sequence of sub-tasks.
 While each demonstration motion may vary and be noisy, each demonstration also contains roughly the same order of true segments.
 This consistent, repeated structure can be exploited to infer global segmentation criteria.
@@ -21,7 +20,7 @@ Then, we can filter this set by identifying transition events that occurred at s
 Our experiments suggest that this approach has improved robustness and sample-efficiency, while approximating the behavior of more complicated dynamical systems-based approaches in many real problems.
 
 I formalize this intuition into a new hierarchical clustering algorithm for unsupervised segmentation called Transition State Clustering.
-The proposed approach is also relevant to problems in other domains, but this paper will focus on results from surgical applications.
+The proposed approach is also relevant to problems in other domains, but I will focus on results from surgical applications.
 \tsc first applies a motion-based segmentation model over the noisy trajectories and identifies a set of candidate segment transitions in each.
 \tsc then clusters the transition states (states at times transitions occur) in terms of kinematic, sensory, and temporal similarity. 
 The clustering process is hierarchical where the transition states are first assigned to Gaussian Mixture clusters according to kinematic state, then these clusters are sub-divided using the sensory features, and finally by time.
@@ -41,7 +40,7 @@ plot the estimated segment transitions (state of the end point) for each of the 
 \tsc exploits this property to improve the robustness of motion-based segmentation.
 
 
-\section{Transition State Clustering Model}
+\section{Transition State Clustering}
 This section describes the problem setting, assumptions, and notation.
 Let $D=\{d_i\}$ be a set of demonstrations of a robotic task.
 Each demonstration of a task $d$ is a discrete-time sequence of $T$ state vectors in a feature-space $\mathcal{X}$.

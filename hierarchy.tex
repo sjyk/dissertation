@@ -1,4 +1,4 @@
-\chapter{Learning Temporal Abstractions in Reinforcement Learning}
+\chapter{Deep Discovery of Deep Options: Learning Hierarchies From Data}
 \setcounter{secnumdepth}{1}
 In high-dimensional or combinatorial action spaces, the vast majority of action sequences are irrelevant to the task at hand.
 Therefore, purely random exploration is likely to be prohibitively wasteful.
@@ -14,7 +14,6 @@ How do we parametrize $\mathcal{A}_{relevant}$?
 One approach is to describe the agent's actions as a composition higher-level behaviors called~\cite{suttonPS99}, each consisting of a control policy for one region of the state space, and a termination condition recognizing leaving that region. This augmentation naturally defines a hierarchical structure of high-level \emph{meta-control} policies that invoke lower-level options to solve sub-tasks.
 This leads to a ``divide and conquer'' relationship between the levels, where each option can specialize in short-term planning over local state features, and the meta-control policy can specialize in long-term planning over slowly changing state features.
 This means that any search can be restricted to the action sequences that can be formed as a composition of skills.
-
 
 Abstractions for decomposing an MDP into subtasks have been studied in the area of hierarchical reinforcement learning (HRL)~\cite{parr98,suttonPS99,barto03}.
 Early work in hierarchical control demonstrated the advantages of hierarchical structures by handcrafting hierarchical policies~\cite{brooks1986robust} and by learning them given various manual specifications: state abstractions~\cite{dayanH92,hengst02,kolterAN07,konidarisB07}, a set of waypoints~\cite{kaelbling93}, low-level skills~\cite{huberG97,baconP15,liaw17composing}, a set of finite-state meta-controllers~\cite{parrR97}, or a set of subgoals~\cite{suttonPS99,dietterich00}.

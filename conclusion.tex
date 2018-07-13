@@ -1,7 +1,42 @@
-\chapter{Conclusions}
-This dissertation started with the challenge that \emph{Deep RL conflates statistical learning with sequential search.} Conflating these very different optimization algorithms leads to a chicken-and-egg problem where one of the problems must be solved before the other can make progress. My thesis is that \emph{it is possible to learn important structural features of a sequential prediction task from a limited ammount of expert data to significantly improve the sample-efficiency, stability, and applicability of Deep RL.} 
+\chapter{Conclusion}
+This dissertation explores reinforcement learning, a family of algorithms for finding solutions to MDP that assume query access to the underlying dynamical system:
+\[
+q_t: s_t, a_t \rightarrow \textsf{system()} \rightarrow s_{t+1}, r_{t}
+\]
+High-dimensional and long-horizon search problems can require a prohibitive number of such queries, and exploiting prior knowledge is crucial.
+In several domains of interest, a limited amount of expert knowledge is available and my dissertation presents an argument \emph{learning such structure can significantly improve the sample-efficiency, stability, and robustness of RL methods.} 
 With this additional supervision, the search process can be restricted to those sequences that are similar to the supervision provided by the expert.
-My work over the last 6 years explores this architecture in several Deep RL systems for control of imprecise cable-driven surgical robots, automatically synthesizing data-cleaning programs to meet quality specifications, and generating efficient execution plans for relational queries. I describe algorithmic contributions, theoretical analysis about the implementations themselves, and the architecture of the RL systems.
+The dissertation explores several Deep RL systems for control of imprecise cable-driven surgical robots, automatically synthesizing data-cleaning programs to meet quality specifications, and generating efficient execution plans for relational queries. I describe algorithmic contributions, theoretical analysis about the implementations themselves, and the architecture of the RL systems.
 
 \section{Challenges and Open Problems}
-\textbf{TODO}
+The promise of (deep) reinforcement learning is a general algorithm that applies to a large variety of MDP settings. 
+My dissertation focuses on the RL setting with the most minimal assumptions on the MDP.
+In general, there is a spectrum of assumptions one could make and interesting sub-families of algorithms arise at different points on the spectrum.
+
+\subsection*{A Vision For Reinforcement Learning}
+I believe that role of Reinforcement Learning is analagous to the role of Stochastic Gradient Descent in supervised learning problems. While it is not practical to expect that RL will solve every MDP in the most efficient way, we would like it to be competitive to specialized algorithms. This is similar to SGD in many supervised learning problems, while special case alterative exist that are often more performant (e.g., SDCA for SVM problems and Newton's Method for Linear Regression), SGD is a reasonable general purpose framework that works decently well across a variety of problems. This unification has allowed the community to build optimized frameworks around SGD, e.g., TensorFlow, and has ultimately, greatly accelerated the rate of applications research using supervised learning. I envision a similar future for RL, one where a small number of RL algorithms are essentially competitive with classical baselines. Better alternatives may exist in special cases but one can expect RL to work across problem domains. This requires that RL exploit much of the same problem structure that the classical algorithms exploit.
+
+\subsection*{Reset Assumptions}
+One assumption not discussed in this work is how the system can be reset to its initial state after querying it. In many problems, one has arbitrary control over the reset process, i.e., the system can be initialized in any state.
+This is the principle of backtracking search in constraint satisfaction and graph search. 
+Designing RL algorithms that intelligently select initial states to begin their search is an interesting avenue of research.
+For example, one could imagine a Deep Q-Learning learning algorithm which rather than sampling from the initial state distribution begins its rollouts from a random point in a trajectory in its replay buffer.
+This would simulate some level of backtracking behavior in the algorithm.
+Optimizing the initialization process over a collection of tasks would be very valuable.
+
+\subsection*{Demonstration Assumptions}
+State-action sequences are the most basic form of supervision from an expert. 
+A more advanced expert may be able to provide much more information such as task segments, hierarchical information, and perhaps even hints to the learner. 
+Thinking about how to formalize the notion of hints from the supervisor is another interesting research direction.
+What if the supervisor could give a partially written program to the describe the control policy and the search algorithm could fill in the gaps?
+There are interesting questions of how we represent partial or incomplete knowledge in a framework like RL.
+
+\subsection*{Distance Assumptions}
+
+\subsection*{Implementation Assumptions}
+All existing RL frameworks assume discrete time control. However, in real software systems, decisions are made at actual points of time with possibly varying latencies. 
+These problems are exacerbated when policies are queried over networks.
+RL systems have to be robust to the staleness of their decisions.
+There are a number of interesting research questions surrounding timing concerns when evaluating policies, training the policies in ways that they hedge against being executed late, and building inference engines that can apply stop gap actions when a policy is slow to evaluate.
+
+
