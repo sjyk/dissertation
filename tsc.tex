@@ -31,16 +31,6 @@ To avoid setting the number of clusters at each level of the hierarchy in advanc
 A series of merging and pruning steps remove sparse clusters and repetitive loops.
 
 
-\vspace{0.5em}
-
-\noindent \textbf{Example: } As an example of how noise can affect segmentation, consider a system where a spherical ball is dropped until it bounces off a block.
-Under noiseless conditions, most classical segmentation techniques that look for changes in direction (e.g., zero-velocity crossings) or local linearity of motion would identify two segments (Figure \ref{toy-1}).
-If the observations are perturbed by noise, these approaches tend to ``over segment'', where noise can be confused for actual changes in direction.
-If we collect 5 demonstrations from the same system, and
-plot the estimated segment transitions (state of the end point) for each of the noisy demonstrations--we would find that the densest clusters correspond to actual segment endpoints.
-\tsc exploits this property to improve the robustness of motion-based segmentation.
-
-
 \section{Transition State Clustering}
 This section describes the problem setting, assumptions, and notation.
 Let $D=\{d_i\}$ be a set of demonstrations of a robotic task.
@@ -746,9 +736,8 @@ We use layers from a pre-trained Convolutional Neural Network (CNNs) to derive t
 \subsubsection{Evaluation of Visual Featurization}
 In our first experiment, we explore different visual featurization, encoding, and dimensionality reduction techniques.
 We applied \tsc to our suturing experimental dataset and measured the silhouette score of the resulting transition state clusters.
-Table \ref{tab:visual} describes the featurization techniques on the vertical axis and dimensionality reduction techniques on the horizontal axis.
 On this dataset, our results suggest that features extracted from the pre-trained CNNs resulted in tighter transition state clusters compared to SIFT features with a 3\% lower \textsf{ss} than the worst CNN result.
-Next, we found that features extracted with the VGG architecture resulted in the highest \textsf{ss} with a 3\% higher \textsf{ss} than the best AlexNet result.
+We found that features extracted with the VGG architecture resulted in the highest \textsf{ss} with a 3\% higher \textsf{ss} than the best AlexNet result.
 We also found that PCA for dimensionality reduction achieved a \textsf{ss} performance of 7\% higher than the best GRP result and 10\% higher than best CCA result.
 Because CCA finds projections of high correlation between the kinematics and video, we believe that CCA discards informative features resulting in reduced clustering performance. 
 We note that neither of the encoding schemes, VLAD or LCD\del{LCD$_{VLAD}$} significantly improves the \textsf{ss}.
@@ -894,12 +883,9 @@ Our manual annotation of the task has five steps and \tsc recovers this structur
 \vspace{5pt}
 \noindent \textbf{4. Human Demonstration of Toy Plane Assembly: }
 We extend the toy plane assembly experiment to collect eight demonstrations each from two human users. These examples only have videos and no kinematic information. We note that there was a difference between users in the grasping location of fuselage. 
-% We used \TSC to learn segmentation for human demonstrations and the results are showed in \figref{toyPlane-pr2human}.
+ We also \TSC to learn segmentation for human demonstrations.
 The results of \tsc performance are summarized in Table~\ref{tab:pr2}.
-An example of toy plane assembly by both robot and human is qualitatively compared in Figure~\ref{fig:pr2_toyplane}. 
-This emphasizes on the benefits of \tsc, namely, that we do not tune the features to any specific robot or task. 
-These are general visual features that can apply broadly even when a human is performing demonstrations.
-We omit a visualization of the results for the Lego assembly. However, we summarize the results quantitatively in Table \ref{tab:pr2}.
+We omit a visualization of the results for the Lego assembly. However, we summarize the results quantitatively in the table.
 
 % one example each of the \textit{Lego} and \textit{Plane} assembly task is illustrated in Figures~\ref{fig:lego-pr2} and \ref{fig:pr2_toyplane} respectively.
 % The results for clustering evaluation and comparison with a set of manual labels using dynamic time warping distance are tabulated in \tabref{pr2}.

@@ -136,7 +136,7 @@ L(Q) = \sum_{i} \|y_i - Q(s,a)\|_2^2
 \]
 This loss can be optimized with gradient descent. When the state and action space is discrete, the representation of the Q function is a table, and we get the familiar Q-Learning algorithm~\cite{sutton1998reinforcement}--where each gradient step updates the table with the appropriate value. When Q function needs to be approximated, then we get the Deep Q Network algorithm~\cite{mnih2015human}.
 
-\hirl applies a variant of Q-Learning to optimize the policy over the sequential rewards. This is summarized in Algorithm~\ref{alg:tsh3}. The basic change to the algorithm is to augment the state-space with indicator vector that indicates the transition regions that have been reached. So each of the rollouts, now records a tuple $(s,\textbf{v},a,r, s', \textbf{v'})$ that additionally stores this information. The Q function is now defined over states, actions, and segment index--which also selects the appropriate local reward function:
+\hirl applies a variant of Q-Learning to optimize the policy over the sequential rewards. The basic change to the algorithm is to augment the state-space with indicator vector that indicates the transition regions that have been reached. So each of the rollouts, now records a tuple $(s,\textbf{v},a,r, s', \textbf{v'})$ that additionally stores this information. The Q function is now defined over states, actions, and segment index--which also selects the appropriate local reward function:
 \[
 Q(s,a,v) = R_v(s,a) + \arg \max_{a} Q(s',a, v')
 \]
@@ -352,7 +352,7 @@ Based on a chessboard calibration, we found that the robot has an RMSE kinematic
 In our robotic setup, there is an overhead endoscopic stereo camera that can be used to find visual features for learning, and it is located 650mm above the workspace.
 This camera is registered to the workspace with a RSME calibration error of 2.2 mm.
 
-\subsubsection{Deformable Sheet Tensioning} In the first experiment, we consider the task of deformable sheet tensioning. The experimental setup is pictured in Figure \ref{exp:dvrk3}. A sheet of surgical gauze is fixtured at the two far corners using a pair of clips. The unclipped part of the gauze is allowed to rest on soft silicone padding. The robot's task is to reach for the unclipped part, grasp it, lift the gauze, and tension the sheet to be as planar as possible.
+\subsubsection{Deformable Sheet Tensioning} In the first experiment, we consider the task of deformable sheet tensioning.  A sheet of surgical gauze is fixtured at the two far corners using a pair of clips. The unclipped part of the gauze is allowed to rest on soft silicone padding. The robot's task is to reach for the unclipped part, grasp it, lift the gauze, and tension the sheet to be as planar as possible.
 An open-loop policy typically fails on this task because it requires some feedback of whether gauze is properly grasped, how the gauze has deformed after grasping, and visual feedback of whether the gauze is planar.
 The task is sequential as some grasps pick up more or less of the material and the flattening procedure has to be accordingly modified.
 
@@ -367,7 +367,6 @@ The average length of the demonstrations was 48.4 actions (although we sampled o
 From these 15 demonstrations, \hirl identifies four segments. Figure \ref{exp:dvrk3} illustrates the segmentation of a representative demonstration with important states plotted over time.
 One of the segments corresponds to moving to the correct grasping position, one corresponds to making the grasp, one lifting the gauze up again, and one corresponds to straightening the gauze.
 One of the interesting aspects of this task is that the segmentation requires multiple features.
-Figure \ref{exp:dvrk3} plots three signals (current load, disparity, and z position), and segmenting any single signal may miss an important feature. 
 
 Then, we tried to learn a policy from the rewards constructed by \hirl.
 In this experiment, we initialized the policy learning phase of \hirl with the Behavioral Cloning policy.

@@ -281,12 +281,94 @@ We evaluate this framework on a standard join optimization benchmark called the 
 about movies and related facts about actors, directors,
 production companies, etc. 
 The dataset is 3.6 GB large and consists of 21 relational tables.
-The two largest tables, cast info and movie info have
-36 M and 15 M rows, respectively.
+The largest table has
+36 M rows.
 The benchmark contains 33 queries which have between 3 and 16 joins, with an average of 8 joins
 per query. 
 
 \subsection*{Evaluation Methodology}
-Using this data and workload, we construct query optimization problems against the following cost models:
+We first evaluate RL-QOPT against 3 different cost models for the workload and data in the join order benchmark. Each of these cost models is designed to elicit a different set of optimal plans. 
+We show that, as a learning optimizer, RL-QOPT adapts to the different search spaces efficiently.
 
-\noindent \textbf{}
+\vspace{0.25em} \noindent \textbf{CM1: } In the first cost model, we model a main-memory database that performs two types of joins: index nested-loop joins and in-memory hash joins. Let $O_l$ be the left operator and $O_r$ be the right operator the costs are defined as follows:
+\[
+\textsf{c}_{inlj} = \textsf{c}(O_l) + \textsf{rf}(O_l, O_r) \cdot |O_l|
+\]
+\[
+\textsf{c}_{hj} = \textsf{c}(O_l) + \textsf{c}(O_r)
+\]
+where \textsf{c} denotes the cost estimation function and \textsf{rf} denotes the estimated reduction factor of the join.
+As we can see, this model favors index-based joins when available. 
+The reduction factor $\textsf{rf}(O_l, O_r)$ is always less than 1.
+More importantly, this cost model is a justification for the use of left-deep plans.
+In $\textsf{c}_{inlj}$, the right operator does not incur a scan cost.
+A left deep tree where the indexed relations are on the right exploits this structure.
+
+
+\vspace{0.25em} \noindent \textbf{CM2: } In the next cost model, we model a database that accounts for disk-memory relationships in the hash joins. We designate the left operator as the ``build'' operator and the right operator as the ``probe'' operator. 
+If the previous join has already built a hash table on an attribute of interest, then the hash join does not incur another cost.
+\[
+\textsf{c}_{nobuild} = \textsf{c}(O_r)
+\]
+This model favors right-deep plans where to maximize the reuse of the built hash tables.
+
+
+\vspace{0.25em} \noindent \textbf{CM3: } Finally, in the next cost model, we model temporary tables and memory capacity constraints. There is a budget of tuples that can fit in memory and an additional physical operator that allows for materialization of a join result if memory exists. Then, the downstream cost of reading from a materialized operator is 0.   
+\[
+\textsf{c}(O) = 0 \text{ if materialized}
+\]
+This model requires bushy plans due to the inherent non-linearity of the cost function and memory constraints. 
+The cost model encourages plans that group tables together in ways that the join output can fit in the available memory.
+
+\subsection*{Join Order Benchmark}
+We train RL-QUOPT on 90 Queries and hold out 23 queries from the worklaod. In the initial experiment, we assume perfect selectivity estimates of single-table predicates. We compare three optimizers as baselines: left-deep, right-deep, and bushy (exhaustive). 
+Figure \ref{sqla} shows the aggregate results for the entire workload over random partitions of the data. We present results for each of the cost models. 
+While the bushy optimizer works well in terms of cost in all three regimes, it is very expensive to run.
+The left-deep and the right-deep optimizers are far quicker, but require the prior understanding of costs in the database.
+We see that in each of the different cost models a different optimizer (left-deep or right-deep) dominates in terms of performance. 
+On the other hand, the learning optimizer nearly matches the bushy performance in all of the regimes while retaining a very fast run time.
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.24\textwidth]{sql-experiments/1c.png}
+\includegraphics[width=0.24\textwidth]{sql-experiments/1b.png}
+\includegraphics[width=0.24\textwidth]{sql-experiments/1a.png}
+\includegraphics[width=0.24\textwidth]{sql-experiments/1d.png}
+\caption{(A) The log cost of the different optimizers with CM1, (B) the log cost of the different optimizers with CM2,  (C) the log cost of the different optimizers with CM3, and (D) the runtime of the different optimizers. \label{sqla}}
+\end{figure}
+
+
+For CM1, we plot the learning curve as a function of the number of training queries (Figure \ref{lcsql}). We actually find that even with 50 training queries, we can consistently find plans competitive with exhaustive search. This suggests that the network is not simply memorizing and is generalizing to unseen subplans.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.5\textwidth]{sql-experiments/2a.png}
+\caption{The learning curve as a function of the number of queries. The log normalized cost describes the cost difference between learning and the exhaustive bushy optimizer.  \label{lcsql}}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.4\textwidth]{sql-experiments/tpch.pdf}
+\caption{The performance improvement of learning over the postgres query optimizer for each of the TPCH template queries. \label{tpch}}
+\end{figure}
+
+\subsection*{TPC-H}
+The TPC-H Benchmark is a dataset and workload of SQL queries. It consists of ad-hoc queries and concurrent data modifications. The queries and the data populating the database are inspired by those seen in industry. Unlike the JOB where there is fixed number of queries, TPCH contains a query generator that generates an arbitrary number of queries from templates. In this experiment, we learn the selectivity estimates from data as well.
+
+Using our Apache Calcite connection, we also execute these queries on a real postgres database. Unlike the JOB, these are not idealized cost model. We train the RL algorithm with real runtimes. We first generate 10k training queries for the RL algorithm. Then, we evaluate the RL algorithm on a 100k queries from the generator. We aggregate results by query template. We find that after 10k queries, RL-QUOPT significantly improves on the postgres optimizer on several of the template (Figure \ref{tpch}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.32\textwidth]{sql-experiments/exploration-performance.png}
+\includegraphics[width=0.32\textwidth]{sql-experiments/exploration2.png}
+\includegraphics[width=0.32\textwidth]{sql-experiments/discount.png}
+\caption{How exploration and discount parameters affect learning performance. \label{exp}}
+\end{figure}
+
+
+The real execution experiment also raises questions about training data collection. During data collection the learner has to execute suboptimal query plans; this could make collecting data very expensive. We evaluate this tradeoff in Figure \ref{exp}. As the exploration parameter $\epsilon$ increases, the query plans executed during training are increasingly suboptimal. However, the learning optimizer has to see a sufficient number of ``bad plans'' to learn an effective optimization policy. Similarly, the discount parameter also affected training performance. Lower discount settings lead to greedier cost attribution--and actually faster training. 
+
+
+\subsection*{Conclusion}
+Reinforcement learning introduces a new approximate dynamic programming framework for SQL query optimization. Classical query optimizers leverage dynamic programs for optimally nesting join queries. This process creates a table that memoizes cost-to-go estimates of intermediate subplans. By representing the memoization table with a neural network, the optimizer can estimate the cost-to-go of even previously unseen plans allowing for a vast expansion of the search space. I show that this process is a form of Deep Q-Learning where the state is a query graph and the actions are contractions on the query graph. One key result is that the same optimization algorithm can adaptively learn search strategies for both in-memory databases (where the search space is often heuristically restricted based to maximize index accesses) and disk-based databases (where the search space is often heuristically restricted to maximize re-use of intermediate results).

@@ -297,7 +297,7 @@ We can rely on this to select the number of options offline without rolling out 
 \end{figure}
 
 \vspace{0.25em}\noindent\textbf{Control Space Augmentation (Kinematic): } 
-We test two different architectures for the output layer of the high-level policy: either a softmax categorical distribution selecting an option, or the hybrid categorial--continuous distribution output described in~\sref{hybrid}.
+We test two different architectures for the output layer of the high-level policy: either a softmax categorical distribution selecting an option, or the hybrid categorial--continuous distribution output described in.
 The low-level policies are linear.
 
 Figure \ref{fig:b2dexp1-3} describes the empirical estimation, through policy rollouts, of the success rate as a function of the number of options, and of the fraction of time that the high-level policy applies physical control.
@@ -487,7 +487,7 @@ We collected 60 such demonstrations, in each fully clearing a pile of 3--8 needl
 \end{figure}
 
 
-We apply \alg to the collected demonstrations with the policy architecture described in \textbf{SM 1.4}. In this network, there are three inputs: a binary \textsf{image}, a candidate \textsf{grasp}, and kinematics (\textsf{kin}). These inputs are processed by distinct branches of the network before being aggregated into a single feature layer.  Using the cross-validation technique described in~\sref{k-validation}, we selected the number of options to be $k=4$.
+We apply \alg to the collected demonstrations with the policy architecture described in \textbf{SM 1.4}. In this network, there are three inputs: a binary \textsf{image}, a candidate \textsf{grasp}, and kinematics (\textsf{kin}). These inputs are processed by distinct branches of the network before being aggregated into a single feature layer.  Using the cross-validation technique described before, we selected the number of options to be $k=4$.
 
 We plot the average activations of the feature layer for each low-level option (Figure \ref{fig:dvrkexp4}). While this is only a coarse analysis, it gives some indication of which inputs (\textsf{image}, \textsf{grasp}, or \textsf{kin}) are relevant to the policy and termination. We see that the options are clearly specialized. The first option has a strong dependence only on the \textsf{grasp} candidate, the second option attends almost exclusively to the \textsf{image}, while the last two options rely mostly on \textsf{kin}.
 The experimental details are described below:
