@@ -1,16 +1,16 @@
 \setcounter{secnumdepth}{0}
 \chapter{Introduction}
-Bellman's ``Principle of Optimality'' and the characterization of dynamic programming is one of the most important results in computing~\cite{bellman2013dynamic}. Its importance stems from the ubiquity of Markovian decision processes (MDPs), which formalize a wide range of problems from path planning to scheduling~\cite{howard1966dynamic}. In the most abstract form, there is an agent who makes a sequence of decisions to effect change on a system that processes these decisions and updates its internal state possibly in non-deterministically. 
+Bellman's ``Principle of Optimality'' and the characterization of dynamic programming is one of the most important results in computing~\cite{bellman2013dynamic}. Its importance stems from the ubiquity of Markovian decision processes (MDPs), which formalize a wide range of problems from path planning to scheduling~\cite{howard1966dynamic}. In the most abstract form, there is an agent who makes a sequence of decisions to effect change on a system that processes these decisions and updates its internal state possibly non-deterministically. 
 The process is ``Markovian'' in the sense that the system's current state completely determines its future progression. As an example of an MDP, one might have to plan a sequence of motor commands to a robot to control it to a target position. Or, one might have to schedule a sequence of cluster computing tasks while avoiding double scheduling on a node. 
-The solution to a MDP is a decision making policy; the optimal decision to make given any current state of the system. 
+The solution to a MDP is a decision making policy: the optimal decision to make given any current state of the system. 
 
 Since the MDP framework is extremely general---it encompasses shortest-path graph search, supervised machine learning, and optimal control---the difficulty in solving a particular MDP relates to what assumptions can be made about the system.
-A setting of interest is when one only assumes black-box access to the system, where no parametric model of the system is available and the agent must iteratively query the system to optimize its decision policy.
-This setting, also called \emph{reinforcement learning}~\cite{sutton1998reinforcement}, is interesting for a few reasons.
+A setting of interest is when one only assumes black-box access to the system, where no parametric model of the system is readily available and the agent must iteratively query the system to optimize its decision policy.
+This setting, also called \emph{reinforcement learning}~\cite{sutton1998reinforcement}, has been the subject of significant recent research interest.
 First, there are many dynamical problems for which a closed-form analytical description of a system's behavior is not available but one has a programatic approximation of how the system transitions (i.e., simulation).
 Reinforcement Learning (RL) allows for direct optimization of decision policies over such simulated systems.
 Next, by virtue of the minimal assumptions, RL algorithms are extremely general and widely applicable across many different problem settings.
-From a Software Engineering perspective, this unification allows the research community to develop a small number of optimized libraries for RL rather each domain designing/maintaining problem-specific algorithms.
+From a software engineering perspective, this unification allows the research community to develop a small number of optimized libraries for RL rather each domain designing/maintaining problem-specific algorithms.
 Over the last few years, the combination deep neural networks and reinforcement learning, or Deep RL, have emerged as in robotics, AI, and machine learning as an important area of research~\cite{mnih2015human,silver2017mastering, sunderhauf2018limits, stoica2017berkeley}.
 Deep RL correlates features of states to successful decisions using neural networks. 
 
