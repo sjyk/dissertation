@@ -255,10 +255,10 @@ As expected, the flat linear policy is unsuccessful at the task for any number o
 
 We apply \alg and learn two 2-level hierarchical policies, one with linear low-level options, and the other with MLP low-level options of the same architecture used for the flat policy. 
 
-\vspace{0.25em}\noindent \textbf{Multi-Layer Perceptron Flat Policy: } One of the baseline policies is a multi-layer perceptron (MLP) policy which has a single ReLU hidden layer of 64 nodes.
-This policy is implemented in Tensorflow and is trained with an ADAM optimizer with learning rate $1e-5$.
+\vspace{0.25em}\noindent \textbf{Multi-Layer Perceptron Flat Policy: } One of the baseline policies is a multi-layer perceptron (MLP) policy which has a single Rectified Linear Unit (ReLU) hidden layer of 64 nodes.
+This policy is implemented in Tensorflow and is trained with a stochastic gradient descent optimizer with learning rate $10^{-5}$.
 
-\vspace{0.25em}\noindent \textbf{\alg Policy 1: } In the first policy trained by \alg, we have a logistic regression meta-policy that selects from one of $k$ linear sub-policies. The linear sub-policies execute until a termination condition determined again by a logistic regression. This policy is implemented in Tensorflow and is trained with an ADAM optimizer with learning rate $1e-5$. For the linear hierarchy, we set \alg to discover 5 options, which is tuned using the cross-validation method described before.
+\vspace{0.25em}\noindent \textbf{\alg Policy 1: } In the first policy trained by \alg, we have a logistic regression meta-policy that selects from one of $k$ linear sub-policies. The linear sub-policies execute until a termination condition determined again by a logistic regression. This policy is implemented in Tensorflow and is trained with an ADAM optimizer with learning rate $10^{-5}$. For the linear hierarchy, we set \alg to discover 5 options, which is tuned using the cross-validation method described before.
 
 \vspace{0.25em}\noindent \textbf{\alg Policy 2: } In the second policy trained by \alg, we have a logistic regression meta-policy that selects from one of $k$ multi-layer perceptron sub-policies. 
 As with the flat policy, it has a single ReLU hidden layer of 64 nodes.
@@ -274,15 +274,15 @@ We also vary the number of options discovered by \alg, and plot the reward obtai
     \caption{2D Surface Pushing from low-dimensional observations and image observations. (A) The sample complexity of different policy representations, (B) The success rate for different numbers of discovered options, (C) The peak in the reward correlates over the number of options with the 10-fold cross-validated log-likelihood. \label{fig:b2dexp1-1}}
 \end{figure}
 
-\vspace{0.25em}\noindent\textbf{Observing Images: } Next, we consider the case where the sensor inputs are 640x480 images of the scene. The low-dimensional state is still fully observable in these images, however these features are not observed explicitly, and must be extracted by the control policy. We consider two neural network architectures to represent the policy: a convolutional layer followed by either a fully connected layer or an LSTM, respectively forming a feed-forward (FF) network and a recurrent network (RNN).
+\vspace{0.25em}\noindent\textbf{Observing Images: } Next, we consider the case where the sensor inputs are 640$\times$480 images of the scene. The low-dimensional state is still fully observable in these images, however these features are not observed explicitly, and must be extracted by the control policy. We consider two neural network architectures to represent the policy: a convolutional layer followed by either a fully connected layer or an LSTM, respectively forming a feed-forward (FF) network and a recurrent network (RNN).
 We use these architectures both for flat policies and for low-level options in hierarchical policies.
 For the hierarchical policies, as in the previous experiment, we consider a high-level policy that only selects options.
 For the FF policy we discover 4 options, and for the RNN policy we discover 2 options.
  
- \vspace{0.25em}\noindent \textbf{\alg FF Policy: } First, we consider a neural network with a convolutional layer with 64 5x5 filters followed by a fully connected layer forming a feed-forward (FF) network. The high-level model only selects options and is parametrized by the same general architecture with an additional softmax layer after the fully connected layer. This means that the meta-control policy is a two-layer convolutional network whose output is a softmax categorical distribution over options. This policy is implemented in Tensorflow and is trained with an ADAM optimizer with learning rate $1e-5$.
+ \vspace{0.25em}\noindent \textbf{\alg FF Policy: } First, we consider a neural network with a convolutional layer with 64 5$\times$5 filters followed by a fully connected layer forming a feed-forward (FF) network. The high-level model only selects options and is parametrized by the same general architecture with an additional softmax layer after the fully connected layer. This means that the meta-control policy is a two-layer convolutional network whose output is a softmax categorical distribution over options. This policy is implemented in Tensorflow and is trained with an ADAM optimizer with learning rate $10^{-5}$.
  We used $k=2$ options for the FF policy.
  
- \vspace{0.25em}\noindent \textbf{\alg RNN Policy: } Next, we consider a neural network with a convolutional layer with 64 5x5 filters followed by an LSTM layer forming  a recurrent network (RNN). The high-level model only selects options and is parametrized by the same general architecture with an additional softmax layer after the LSTM. This policy is implemented in Tensorflow and is trained with a Momentum optimizer with learning rate $1e-4$ and momentum $4e-3$.
+ \vspace{0.25em}\noindent \textbf{\alg RNN Policy: } Next, we consider a neural network with a convolutional layer with 64 5$\times$5 filters followed by an LSTM layer forming  a recurrent network (RNN). The high-level model only selects options and is parametrized by the same general architecture with an additional softmax layer after the LSTM. This policy is implemented in Tensorflow and is trained with a Momentum optimizer with learning rate $10^{-4}$ and momentum $10^{-3}$.
   We used $k=4$ options for the RNN policy.
 
   The hierarchical policies require 30\% fewer demonstrations than the flat policies to achieve the maximum reward (Figure \ref{fig:b2dexp1-1} Bottom-A).
@@ -311,7 +311,7 @@ When the options are too few to provide skills that are useful throughout the st
 
 
 \vspace{0.25em}\noindent\textbf{Control Space Augmentation (Images): }  We ran the same experiment but on the image state-space instead of the low dimensional state.
-The sensor inputs are 640x480 images of the scene and the task is the Box2D pushing task.
+The sensor inputs are 640$\times$480 images of the scene and the task is the Box2D pushing task.
 Figure \ref{fig:augimages} describes the empirical estimation, through policy rollouts, of the success rate as a function of the number of options, and of the fraction of time that the high-level policy applies physical control.
 When the options are too few to provide skills that are useful throughout the state space, physical controls can be selected instead to compensate in states where no option would perform well. 
 
@@ -412,13 +412,13 @@ One of the trajectories has to rotate in a different direction to orient the nee
 
 
 \vspace{0.25em} \noindent \textbf{Flat Policy: } One of the baseline policies is a multi-layer perceptron (MLP) policy which has a single ReLU hidden layer of 64 nodes.
-This policy is implemented in Tensorflow and is trained with an ADAM optimizer with learning rate $1e-5$.
+This policy is implemented in Tensorflow and is trained with an ADAM optimizer with learning rate $10^{-5}$.
 
 \vspace{0.25em} \noindent \textbf{Per-Timestep Policy: } Next, we consider a degenerate case of options where each policy executes for a single-timestep. We train 15 distinct multi-layer perceptron (MLP) policies each of which has a single ReLU hidden layer of 64 nodes.
-Thes policies are implemented in Tensorflow and are trained with an ADAM optimizer with learning rate $1e-5$.
+Thes policies are implemented in Tensorflow and are trained with an ADAM optimizer with learning rate $10^{-5}$.
 
 \vspace{0.25em} \noindent \textbf{\alg Policy: } \alg trains a hierarchical policy with 5 options. We considered a hierarchy where the meta policy is a multilayer perceptron with a softmax output that selects the appropriate option, and the options are parametrized by another multilayer perceptron with continuous outputs. Each of the MLP policies has a single ReLU hidden layer of 64 nodes.
-Thes policies are implemented in Tensorflow and are trained with an ADAM optimizer with learning rate $1e-5$.
+Thes policies are implemented in Tensorflow and are trained with an ADAM optimizer with learning rate $10^{-5}$.
 
 
 \vspace{0.25em} \noindent \textbf{Execution: } 

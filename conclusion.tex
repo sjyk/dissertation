@@ -37,4 +37,24 @@ Thinking about how to formalize the notion of hints from the supervisor is anoth
 What if the supervisor could give a partially written program to the describe the control policy and the search algorithm could fill in the gaps?
 There are interesting questions of how we represent partial or incomplete knowledge in a framework like RL.
 
+\subsection*{Transfer}
+The ``holy grail'' of Deep Reinforcement Learning is to demonstrate non-trivial transfer of learned policies between MDPs or perturbations of the system. 
+Ensuring safe policy deployments involves understanding the effects of applying a policy trained in simulation or in a training environment to the non-idealities of the real world.
+For example, in our query optimization project, to deploy the policies trained from a cost model, we had to perform significant fine-tuning in the real world.
+
+The challenge is that real world observations often have very different properties than the data seen in training.
+When we execute an SQL query, we do not observe
+all of the intermediate costs without significant instrumentation of
+the database. We may only observe a final runtime (the simulator is a proxy for this). Executing
+subplans can be very expensive (queries can take several minutes
+to run). However, we can still leverage a final runtime to adjust
+plans that optimize runtime, while still leveraging what we have
+learned from the cost-model. One can think about the fine-tuning
+process as first using the cost model to learn relevant features about
+the structure of subplans (i.e., which ones are generally beneficial).
+After this is learned, those features are fed into a predictor to project
+the effect of that decision on final runtime.
+Generalizing such ideas is an interesting avenue of research. 
+Can Deep RL in a simulator be used to learn features, which allow for rapid transfer to the real world?
+
 

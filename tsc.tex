@@ -442,7 +442,7 @@ After establishing the correspondence between predictions and ground truth, we c
 
 %\subsubsection{Overview}
 
-\subsubsection{Accuracy v.s. Noise}
+\subsubsection{Accuracy vs. Noise}
 In our first experiment, we measured the segment accuracy for each of the algorithms for 50 demonstrations.
 We also varied the amount of process and observation noise in the system.
 As Figure \ref{simulated-noise} illustrates, this is a very significant amount of noise in the data, and successful techniques must exploit the structure in multiple demonstrations.
@@ -554,7 +554,7 @@ In all of our experiments, the pruning parameter $\rho$ is set to $80\%$ and the
 The state-space is the 6D end-effector position.
 In some experiments, we augment this state-space with the following visual features:
 \begin{enumerate}
-\item \emph{Grasp}. 0 if empty, 1 other wise.
+\item \emph{Grasp}. 0 if empty, 1 otherwise.
 \item \emph{Needle Penetration}. We use an estimate of the penetration depth based on the robot kinematics to encode this feature. 
 If there is no penetration (as detected by video), the value is 0, otherwise the value of penetration is the robot's $z$ position.
 \end{enumerate}

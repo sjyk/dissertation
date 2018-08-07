@@ -14,28 +14,18 @@ From a software engineering perspective, this unification allows the research co
 Over the last few years, the combination deep neural networks and reinforcement learning, or Deep RL, have emerged as in robotics, AI, and machine learning as an important area of research~\cite{mnih2015human,silver2017mastering, sunderhauf2018limits, stoica2017berkeley}.
 Deep RL correlates features of states to successful decisions using neural networks. 
 
-Due to the nature of these black-box queries, RL can be very inefficient in problems where the decision space is high-dimensional and when the decision horizon (the length of the sequence of decisions the agent needs to make) is very long. 
+Since RL relies on black-box queries to optimize the policy, it can be very inefficient in problems where the decision space is high-dimensional and when the decision horizon (the length of the sequence of decisions the agent needs to make) is very long. 
 The algorithm has to simultaneously correlate features that are valuable for making a decision in a state while also searching through the space of decisions to figure out which sequence of decisions are valuable. A failure to learn means that the algorithm cannot intelligently search the space of decisions, and a failure to find promising sequences early means that the algorithm cannot learn.
 This creates a fundementally unstable algorithm setting, where the hope is the algorithm discovers good decision sequences by chance and can bootstrap from these relatively rare examples.
 The higher the dimensionality of the problem, the less likely purely random search will be successful. 
 
-Since Deep RL suffers such limitations, how do practioners solve such large scale ``black-box'' problems today (with non-Deep RL methods)? Every domain has pragmatic approximation algorithms that exploit heuristics, domain knowledge, and other known structure of typical solutions in the problem domain. Consider the following examples:
+Fortunately, in many domains of interest, a limited amount of expert knowledge is available, e.g., a human teleoperator can guide the motion of a robot to show an example solution of one problem instance or a slow classical algorithm can be used to generate samples for limited problem instances.
+Collecting such ``demonstrations'' to exhaustively learn a solution for possible progressions on MDP (called Imitation Learning~\cite{osa2018algorithmic}) can be expensive, but we might have sufficient data to find important structural features of a search problem including task decomposition, subspaces of actions that are irrelevant to the task, and the structure of the cost function.
+One such structure is hierarchy, where primitive actions are hierarchically composed into higher level behaviors.
 
-\begin{example}[SQL Query Optimization]
-Most relational database management systems support only dyadic join operations (joining two tables) as primitive operations, a query optimizer must choose the ``best'' sequence of two-way joins to achieve the k-way join of tables requested by a query. The exhaustive decision space is super exponential in k. Since it is common for data to be organized in one large table with several smaller reference tables and typical cost functions are linear in the size of the input tables, most query optimization algorithms restrict their search to left-deep plans.
-\end{example}
-
-\begin{example}[Robot Task and Motion Planning]
-Planning collision free motions of a robot to meet a control objective is exponential in the time-horizon. Long-term tasks are decomposed into shorter nearly independently solvable planning subtasks. This reduces the effective planning horizon and allows the robot to reuse plans if a subtask is repeated.
-\end{example}
-
-Exploiting such structure in Deep RL poses a dilemma---either one sacrifices generality by incorporating problem-specific knowledge into the Deep RL algorithm or one pays the price of exploring an immense search space. Building and maintaining domain-specific Deep RL implementations defeats the unifying premise of Deep RL.
-
-In several domains of interest, a limited amount of expert knowledge is available, e.g., a human teleoperator can guide the motion of a robot to show an example solution of one problem instance.
-Collecting such ``demonstrations'' to exhaustively learn a solution for possible progressions on MDP can be very challenging (called imitation learning~\cite{osa2018algorithmic}), but we might have sufficient data to find important structural features of a search problem including task decomposition, subspaces of actions that are irrelevant to the task, and the structure of the cost function.
-My thesis is that \emph{learning such structure can significantly improve the sample-efficiency, stability, and robustness of Deep RL in high-dimensional and long-horizon search problems.} 
-With this additional supervision, the search process can be restricted to those sequences that are similar to the supervision provided by the expert.
-My work over the last 6 years explores this architecture in several Deep RL systems for control of imprecise cable-driven surgical robots, automatically synthesizing data-cleaning programs to meet quality specifications, and generating efficient execution plans for relational queries. I describe algorithmic contributions, theoretical analysis about the implementations themselves, and the architecture of the RL systems.
+The main contribution of this dissertation is the thesis that \emph{learning action hierarchies from data can significantly improve the sample-efficiency, stability, and robustness of Deep RL in high-dimensional and long-horizon problems.} 
+With this additional structure, the RL process can be restricted to those sequences that are grounded in action sequences seen in the expert data.
+My work over the last 6 years explores this approach in several contexts for control of imprecise cable-driven surgical robots, automatically synthesizing data-cleaning programs to meet quality specifications, and generating efficient execution plans for relational queries. I describe algorithmic contributions, theoretical analysis about the implementations themselves, the architecture of the RL systems, and data analysis from physical systems and simulations.
 
 \vspace{0.75em} \noindent \textbf{Contributions: }  This dissertation contributes:
 
